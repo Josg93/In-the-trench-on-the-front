@@ -34,7 +34,12 @@ VIRTUAL_HEIGHT = 768
 
 BASE_DIR = Path(__file__).parent
 
-TILEMAPS = {}
+NUM_LEVELS = 1
+
+TILEMAPS = {
+    i: str(BASE_DIR / "assets" / "tilemaps" / f"level{i}.json")
+    for i in range(1, NUM_LEVELS + 1)
+}
 
 TEXTURES = {
     "background": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "background_menu.jpeg"),
