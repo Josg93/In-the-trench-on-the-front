@@ -37,8 +37,9 @@ BASE_DIR = Path(__file__).parent
 NUM_LEVELS = 1
 
 TILEMAPS = {
-    i: str(BASE_DIR / "assets" / "tilemaps" / f"level{i}.json")
-    for i in range(1, NUM_LEVELS + 1)
+    1: str(BASE_DIR / "assets" / "tilemaps" / "mapa1.json"),
+    "map1": str(BASE_DIR / "assets" / "tilemaps" / "mapa1.json"),
+    "level1": str(BASE_DIR / "assets" / "tilemaps" / "mapa1.json"),
 }
 
 TEXTURES = {
@@ -51,7 +52,7 @@ TEXTURES = {
 
 FRAMES = {
     "tiles": frames.generate_frames(TEXTURES["tiles"], 16, 16),
-    "entitys": frames.generate_frames(TEXTURES["entitys"], 16, 20),
+    "entitys": frames.generate_frames(TEXTURES["entitys"], 32, 32),
     "buildings": frames.generate_frames(TEXTURES["buildings"], 16, 16),
 }
 

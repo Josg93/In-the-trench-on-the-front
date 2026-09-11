@@ -34,5 +34,5 @@ class inTheTrenchOnTheFront(Game):
         if input_id == "quit" and input_data == "Pressed":
             self.quit()
         else:
-            self.state_machine(input_id, input_data)
+            self.state_machine.on_input(input_id, input_data)
                        

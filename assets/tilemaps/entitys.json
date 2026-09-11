@@ -1,0 +1,15 @@
+{ "columns":14,
+ "image":"..\/graphics\/entitys.png",
+ "imageheight":289,
+ "imagewidth":448,
+ "margin":0,
+ "name":"entitys",
+ "spacing":0,
+ "tilecount":126,
+ "tiledversion":"1.12.2",
+ "tileheight":32,
+ "tilewidth":32,
+ "transparentcolor":"#000000",
+ "type":"tileset",
+ "version":"1.10"
+}
