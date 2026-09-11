@@ -71,5 +71,5 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
         super().render(surface, camera)
         if self.selected:
             dest = camera.apply(pygame.Rect(self.x, self.y, self.width, self.height))
-            pygame.draw.rect(surface, (0, 255, 0), dest, 2)
+            pygame.draw.rect(surface, (0, 0, 0), dest, 2)
 

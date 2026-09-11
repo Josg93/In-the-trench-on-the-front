@@ -54,7 +54,7 @@ TEXTURES = {
 FRAMES = {
     "tiles": frames.generate_frames(TEXTURES["tiles"], 16, 16),
     "entitys": frames.generate_frames(TEXTURES["entitys"], 64,96),
-    "buildings": frames.generate_frames(TEXTURES["buildings"], 16, 16),
+    "buildings": frames.generate_frames(TEXTURES["buildings"], 416, 320),
 }
 
 FONTS = {

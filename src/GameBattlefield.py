@@ -5,8 +5,9 @@ import pygame
 from gale.tilemap import load_tiled_map
 from gale.camera import Camera
 
-from src.definitions import Entitys
+from src.definitions import Entitys, Buildings
 from src.GameEntity import GameEntity
+from src.GameBuilding import GameBuilding
 
 import settings
 
@@ -30,6 +31,9 @@ class GameBattlefield():
         for obj in self.tilemap.object_layers.get("entitys", []):
             self.add_entity(obj)
 
+        for obj in self.tilemap.object_layers.get("buildings", []):
+            self.add_building(obj)
+
         
     def add_entity(self, obj: Any) -> None:
         entity_type = obj.type if obj.type else "Man"
@@ -50,6 +54,33 @@ class GameBattlefield():
                 obj.y,
                 obj.width,
                 obj.height,
+                **definition
+            )
+        )
+
+    def add_building(self, obj: Any) -> None:
+        b_type = obj.type if obj.type else "mill"
+        definition = None
+        if b_type in Buildings.CIVIL_BUILDINGS:
+            definition = Buildings.CIVIL_BUILDINGS[b_type].copy()
+        elif b_type in Buildings.MILITARY_BUILDINGS:
+            definition = Buildings.MILITARY_BUILDINGS[b_type].copy()
+        else:
+            definition = Buildings.CIVIL_BUILDINGS["mill"].copy()
+
+        width = obj.width if obj.width > 0 else definition.pop("width", 416)
+        height = obj.height if obj.height > 0 else definition.pop("height", 320)
+        if "width" in definition:
+            definition.pop("width")
+        if "height" in definition:
+            definition.pop("height")
+
+        self.buildings.append(
+            GameBuilding(
+                obj.x,
+                obj.y,
+                width,
+                height,
                 **definition
             )
         )
@@ -106,6 +137,8 @@ class GameBattlefield():
 
     def render(self, surface: pygame.Surface) -> None:
         self.tilemap.render(surface, self.camera)
+        for building in self.buildings:
+            building.render(surface, self.camera)
         for entity in self.entitys:
             entity.render(surface, self.camera)
         for creature in self.creatures:
