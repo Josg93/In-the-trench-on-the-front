@@ -460,8 +460,44 @@
                  "type":"Man",
                  "visible":true,
                  "width":64,
-                 "x":192,
-                 "y":481
+                 "x":417.333333333333,
+                 "y":862.333333333334
+                }, 
+                {
+                 "height":96,
+                 "id":2,
+                 "name":"",
+                 "opacity":1,
+                 "properties":[
+                        {
+                         "name":"frame_index",
+                         "type":"int",
+                         "value":1
+                        }],
+                 "rotation":0,
+                 "type":"Woman",
+                 "visible":true,
+                 "width":64,
+                 "x":546.666666666667,
+                 "y":861.333333333333
+                }, 
+                {
+                 "height":96,
+                 "id":3,
+                 "name":"",
+                 "opacity":1,
+                 "properties":[
+                        {
+                         "name":"frame_index",
+                         "type":"int",
+                         "value":1
+                        }],
+                 "rotation":0,
+                 "type":"Man",
+                 "visible":true,
+                 "width":64,
+                 "x":480,
+                 "y":993.333333333333
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -481,7 +517,7 @@
          "y":0
         }],
  "nextlayerid":16,
- "nextobjectid":2,
+ "nextobjectid":4,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

@@ -11,5 +11,9 @@ class PlayState(BaseState):
     def update(self, dt: float) -> None:
         self.battlefield.update(dt)
 
+    def on_input(self, input_id: str, input_data: Any) -> None:
+        if hasattr(self.battlefield, "on_input"):
+            self.battlefield.on_input(input_id, input_data)
+
     def render(self, surface: pygame.Surface) -> None:
         self.battlefield.render(surface)

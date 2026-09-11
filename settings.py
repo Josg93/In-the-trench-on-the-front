@@ -16,7 +16,8 @@ input_handler.InputHandler.set_keyboard_action(input_handler.KEY_d, "move_right"
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_LEFT, "move_left")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_a, "move_left")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_SPACE, "jump")
-input_handler.InputHandler.set_mouse_click_action(input_handler.MOUSE_BUTTON_1, "jump")
+input_handler.InputHandler.set_mouse_click_action(input_handler.MOUSE_BUTTON_1, "select_entity")
+input_handler.InputHandler.set_mouse_click_action(input_handler.MOUSE_BUTTON_3, "move_entity")
 
 
 TITLE = "In the Trech on The Front"
@@ -52,7 +53,7 @@ TEXTURES = {
 
 FRAMES = {
     "tiles": frames.generate_frames(TEXTURES["tiles"], 16, 16),
-    "entitys": frames.generate_frames(TEXTURES["entitys"], 32, 32),
+    "entitys": frames.generate_frames(TEXTURES["entitys"], 64,96),
     "buildings": frames.generate_frames(TEXTURES["buildings"], 16, 16),
 }
 

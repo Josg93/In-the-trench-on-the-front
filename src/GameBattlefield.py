@@ -17,12 +17,13 @@ class GameBattlefield():
         self.entitys = []
         self.items = []
         self.creatures = []
+        self.selected_entity = None
 
         self.camera = Camera(
             settings.VIRTUAL_WIDTH,
             settings.VIRTUAL_HEIGHT,
-            x=self.tilemap.pixel_width / 2,
-            y=self.tilemap.pixel_height / 2,
+            x=0,
+            y=self.tilemap.pixel_height,
             bounds=pygame.Rect(0, 0, self.tilemap.pixel_width, self.tilemap.pixel_height)
         )
 
@@ -59,7 +60,7 @@ class GameBattlefield():
         virtual_mouse_y = mouse_y * (settings.VIRTUAL_HEIGHT / settings.WINDOW_HEIGHT)
 
         margin = 50
-        scroll_speed = 500
+        scroll_speed = 1000
         dx = 0
         dy = 0
 
@@ -80,6 +81,29 @@ class GameBattlefield():
         for entity in self.entitys:
             entity.update(dt)
 
+    def on_input(self, input_id: str, input_data: Any) -> None:
+        if hasattr(input_data, "pressed") and input_data.pressed:
+            mouse_x, mouse_y = input_data.position
+            virtual_mouse_x = mouse_x * (settings.VIRTUAL_WIDTH / settings.WINDOW_WIDTH)
+            virtual_mouse_y = mouse_y * (settings.VIRTUAL_HEIGHT / settings.WINDOW_HEIGHT)
+            world_x, world_y = self.camera.screen_to_world((virtual_mouse_x, virtual_mouse_y))
+
+            if input_id == "select_entity":
+                clicked_entity = None
+                for entity in self.entitys:
+                    rect = pygame.Rect(entity.x, entity.y, entity.width, entity.height)
+                    if rect.collidepoint(world_x, world_y):
+                        clicked_entity = entity
+                        break
+
+                for entity in self.entitys:
+                    entity.selected = (entity == clicked_entity)
+                self.selected_entity = clicked_entity
+
+            elif input_id == "move_entity":
+                if self.selected_entity is not None:
+                    self.selected_entity.target_position = (world_x, world_y)
+
     def render(self, surface: pygame.Surface) -> None:
         self.tilemap.render(surface, self.camera)
         for entity in self.entitys:
@@ -89,3 +113,4 @@ class GameBattlefield():
         for item in self.items:
             if item.active:
                 item.render(surface, self.camera)
+
