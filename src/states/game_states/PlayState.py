@@ -57,20 +57,28 @@ class PlayState(BaseState , DrawableMixin):
         
         self.scroll(dt)
 
-
-        # manejar actividades de las entidades
+        # manejar actividades de las entidades y producción de comida
+        working_count = 0
         for entity in self.battlefield.entitys:
             if entity.assigned_building is not None:   
-                 
-                if entity.type in ["Man", "Woman"]:
+                if getattr(entity, "entity_type", "Man") in ["Man", "Woman"]:
                     entity_rect =  entity.get_collision_rect()
                     if entity_rect.colliderect(entity.assigned_building.get_collision_rect()):
                         entity.work()  
                         
-                if entity.type == ["Soldier"]:
+                if getattr(entity, "entity_type", "") == "Soldier":
                     entity_rect =  entity.get_collision_rect()
                     if entity_rect.colliderect(entity.assigned_building.get_collision_rect()):
-                        entity.trench() 
+                        if hasattr(entity, "trench"):
+                            entity.trench() 
+
+            if hasattr(entity, "state_machine") and entity.state_machine and hasattr(entity.state_machine, "current"):
+                from src.states.entity_states.WorkState import WorkState
+                if isinstance(entity.state_machine.current, WorkState):
+                    working_count += 1
+
+        if working_count > 0:
+            self.battlefield.food += 1.0 * dt * working_count
                 
                 
     def on_input(self, input_id: str, input_data: Any) -> None:
@@ -78,6 +86,14 @@ class PlayState(BaseState , DrawableMixin):
             self.battlefield.on_input(input_id, input_data)
 
     def render(self, surface: pygame.Surface) -> None:
-        square_rect = pygame.Rect(self.camera.x, self.camera.y, 20, 20)
-        pygame.draw.rect(surface, (255, 0, 0), self.camera.apply(square_rect))
         self.battlefield.render(surface)
+        box_rect = pygame.Rect(self.camera.x -670, self.camera.y -350, 220, 60)
+        applied_rect = self.camera.apply(box_rect)
+        pygame.draw.rect(surface, (50, 50, 50), applied_rect)
+        pygame.draw.rect(surface, (255, 255, 255), applied_rect, 2)
+        
+        food_text = settings.FONTS["medium"].render(f"Food: {int(self.battlefield.food)}", True, (255, 255, 255))
+        entities_text = settings.FONTS["medium"].render(f"Entities: {len(self.battlefield.entitys)}", True, (255, 255, 255))
+        
+        surface.blit(food_text, (applied_rect.x + 10, applied_rect.y + 8))
+        surface.blit(entities_text, (applied_rect.x + 10, applied_rect.y + 32))
