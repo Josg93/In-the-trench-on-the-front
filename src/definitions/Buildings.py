@@ -9,10 +9,10 @@ CIVIL_BUILDINGS = {
         "solid": True,
         # Definimos offset y tamaño reducido para que la parte superior/centro sea sólida
         # y la parte inferior (pasto) permita el tránsito de los labourers.
-        "collision_offset_x": 40,
-        "collision_offset_y": 80,
-        "collision_width": 336,
-        "collision_height": 200,
+        "collision_offset_x": 130,
+        "collision_offset_y": 150,
+        "collision_width": 152,
+        "collision_height": 71.4,
     },
     "town": {
         "texture_id": "buildings",

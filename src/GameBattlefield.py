@@ -125,6 +125,66 @@ class GameBattlefield():
         for entity in self.entitys:
             entity.update(dt)
 
+    def find_path(self, start_pos: tuple, goal_pos: tuple) -> list:
+        from gale.ai.search import a_star
+
+        start_r, start_c = self.tilemap.tile_at(start_pos[0], start_pos[1])
+        goal_r, goal_c = self.tilemap.tile_at(goal_pos[0], goal_pos[1])
+
+        if not self.tilemap.in_bounds(start_r, start_c) or not self.tilemap.in_bounds(goal_r, goal_c):
+            return []
+
+        walkable_layers = ['civil', 'barraks', 'death_zone']
+
+        def is_walkable(r, c):
+            if not self.tilemap.in_bounds(r, c):
+                return False
+            has_tile = False
+            for layer_name in walkable_layers:
+                layer = self.tilemap.get_layer(layer_name)
+                if layer and layer[r][c] != 0:
+                    has_tile = True
+                    break
+            if not has_tile:
+                return False
+
+            tx, ty = self.tilemap.position_of(r, c)
+            tile_rect = pygame.Rect(tx, ty, self.tilemap.tile_width, self.tilemap.tile_height)
+            for building in self.buildings:
+                if building.solid and building.collidable:
+                    if tile_rect.colliderect(building.get_collision_rect()):
+                        return False
+            return True
+
+        def neighbors_fn(node):
+            r, c = node
+            neighbors = []
+            directions = [
+                (-1, 0, 1.0), (1, 0, 1.0), (0, -1, 1.0), (0, 1, 1.0),
+                (-1, -1, 1.414), (-1, 1, 1.414), (1, -1, 1.414), (1, 1, 1.414)
+            ]
+            for dr, dc, weight in directions:
+                nr, nc = r + dr, c + dc
+                if is_walkable(nr, nc):
+                    neighbors.append(((nr, nc), weight))
+            return neighbors
+
+        def heuristic(n1, n2):
+            return ((n1[0] - n2[0]) ** 2 + (n1[1] - n2[1]) ** 2) ** 0.5
+
+        if not is_walkable(goal_r, goal_c):
+            return []
+
+        tile_path = a_star((start_r, start_c), (goal_r, goal_c), neighbors_fn, heuristic)
+        if not tile_path:
+            return []
+
+        waypoints = []
+        for r, c in tile_path:
+            tx, ty = self.tilemap.position_of(r, c)
+            waypoints.append((tx + self.tilemap.tile_width / 2, ty + self.tilemap.tile_height / 2))
+        return waypoints
+
     def on_input(self, input_id: str, input_data: Any) -> None:
         if hasattr(input_data, "pressed") and input_data.pressed:
             mouse_x, mouse_y = input_data.position
@@ -146,7 +206,14 @@ class GameBattlefield():
 
             elif input_id == "move_entity":
                 if self.selected_entity is not None:
-                    self.selected_entity.target_position = (world_x, world_y)
+                    entity_center = (self.selected_entity.x, self.selected_entity.y)
+                    waypoints = self.find_path(entity_center, (world_x, world_y))
+                    if waypoints:
+                        self.selected_entity.waypoints = waypoints
+                        self.selected_entity.target_position = (world_x, world_y)
+                    else:
+                        self.selected_entity.waypoints = [(world_x, world_y)]
+                        self.selected_entity.target_position = (world_x, world_y)
 
     def render(self, surface: pygame.Surface) -> None:
         self.tilemap.render(surface, self.camera)

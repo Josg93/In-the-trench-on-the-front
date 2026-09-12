@@ -1,7 +1,6 @@
 from typing import Any
 from src import mixins
 from gale.state import StateMachine
-from src import states
 import pygame
 
 class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
@@ -17,7 +16,7 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
         height: float,
         texture_id: str,
         animations: dict,
-        speed: float = 100.0,
+        speed: float = 60.0,
         battlefield: Any = None,
     ) -> None:
         self.x = x
@@ -33,8 +32,10 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
         self.flipped = False
         self.selected = False
         self.target_position = None
+        self.waypoints = []
         self.generate_animations(animations)
 
+        from src import states
         self.state_machine = StateMachine({
             "idle": states.entity_states.IdleState,
             "walk": states.entity_states.WalkState,
@@ -48,17 +49,19 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
         return pygame.Rect(round(self.x), round(self.y + self.height * 0.5), self.width, self.height * 0.5)
 
     def update(self, dt: float) -> None:
-        if self.target_position is not None:
-            target_x, target_y = self.target_position
+        if self.waypoints:
+            target_x, target_y = self.waypoints[0]
             dx = target_x - self.x
             dy = target_y - self.y
             dist = (dx ** 2 + dy ** 2) ** 0.5
 
             if dist < 5.0:
-                self.x = target_x
-                self.y = target_y
-                self.target_position = None
-                self.state_machine.change("idle")
+                self.waypoints.pop(0)
+                if not self.waypoints:
+                    self.x = target_x
+                    self.y = target_y
+                    self.target_position = None
+                    self.state_machine.change("idle")
             else:
                 if abs(dx) > abs(dy):
                     direction = "right" if dx > 0 else "left"
@@ -68,32 +71,12 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
                 move_x = (dx / dist) * self.speed * dt
                 move_y = (dy / dist) * self.speed * dt
 
-                # Movimiento en eje X con verificación de colisión contra edificios sólidos
                 self.x += move_x
-                if self.battlefield:
-                    entity_rect = self.get_collision_rect()
-                    for building in self.battlefield.buildings:
-                        if building.solid and building.collidable:
-                            if entity_rect.colliderect(building.get_collision_rect()):
-                                self.x -= move_x
-                                self.target_position = None
-                                self.state_machine.change("idle")
-                                break
-
-                # Movimiento en eje Y con verificación de colisión contra edificios sólidos
                 self.y += move_y
-                if self.battlefield:
-                    entity_rect = self.get_collision_rect()
-                    for building in self.battlefield.buildings:
-                        if building.solid and building.collidable:
-                            if entity_rect.colliderect(building.get_collision_rect()):
-                                self.y -= move_y
-                                self.target_position = None
-                                self.state_machine.change("idle")
-                                break
 
+                from src import states
                 current_state = self.state_machine.current
-                if self.target_position is not None and (not isinstance(current_state, states.entity_states.WalkState) or getattr(current_state, "direction", None) != direction):
+                if self.waypoints and (not isinstance(current_state, states.entity_states.WalkState) or getattr(current_state, "direction", None) != direction):
                     self.state_machine.change("walk", direction=direction)
 
         self.state_machine.update(dt)

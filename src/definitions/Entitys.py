@@ -6,15 +6,15 @@ LABOURERS = {
         "animations": {
             "idle": {
                 "frames": [0],
-                "interval": 1,
+                "interval": 0.3,
             },
             "walk_left": {
                 "frames": [7,8,9,10,11,12,13],
-                "interval": 0.3,
+                "interval": 0.2,
             },
             "walk_right": {
                 "frames": [1,2,3,4,5,6],
-                "interval": 0.3,
+                "interval": 0.2,
             },
             "walk_up": {
                 "frames": [1,2,3,4,5,6],
@@ -35,7 +35,7 @@ LABOURERS = {
         "animations": {
             "idle": {
                 "frames": [14],
-                "interval": 4.0,
+                "interval": 0.3,
             },
             "walk_left": {
                 "frames": [21,22,23,24,25,26,27],
