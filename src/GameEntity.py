@@ -4,10 +4,6 @@ from gale.state import StateMachine
 import pygame
 
 class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
-    """
-    Entidad del juego (labourer, soldier) que gestiona su movimiento,
-    máquina de estados, selección y colisiones con edificios sólidos.
-    """
     def __init__(
         self,
         x: float,
@@ -18,6 +14,7 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
         animations: dict,
         speed: float = 60.0,
         battlefield: Any = None,
+        entity_type: str = "Man",
     ) -> None:
         self.x = x
         self.y = y
@@ -26,6 +23,8 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
         self.texture_id = texture_id
         self.speed = speed
         self.battlefield = battlefield
+        self.entity_type = entity_type
+        self.assigned_building = None
         self.animations = {}
         self.current_animation = None
         self.frame_index = 0
@@ -45,31 +44,35 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
         self.state_machine.change("idle")
 
     def get_collision_rect(self) -> pygame.Rect:
-        # Rectángulo de colisión de la entidad (enfocado en la parte inferior para perspectiva 2.5D)
-        return pygame.Rect(round(self.x), round(self.y + self.height * 0.5), self.width, self.height * 0.5)
+        return pygame.Rect(round(self.x), round(self.y), self.width, self.height)
 
-    def update(self, dt: float) -> None:
+    def movement(self, dt : float):
         if self.waypoints:
             target_x, target_y = self.waypoints[0]
             dx = target_x - self.x
             dy = target_y - self.y
-            dist = (dx ** 2 + dy ** 2) ** 0.5
+            distance = (dx ** 2 + dy ** 2) ** 0.5
 
-            if dist < 5.0:
+            # si la distancia con el punto es menor a cinco, ha llegado eliminar waypoint
+            if distance < 5.0:
                 self.waypoints.pop(0)
                 if not self.waypoints:
-                    self.x = target_x
-                    self.y = target_y
+                    
                     self.target_position = None
-                    self.state_machine.change("idle")
+                    if self.assigned_building and self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect()):
+                        self.state_machine.change("work")
+                    else:
+                        self.assigned_building = None
+                        self.state_machine.change("idle")
+            # si no ha llegado caminar:            
             else:
                 if abs(dx) > abs(dy):
                     direction = "right" if dx > 0 else "left"
                 else:
                     direction = "down" if dy > 0 else "up"
 
-                move_x = (dx / dist) * self.speed * dt
-                move_y = (dy / dist) * self.speed * dt
+                move_x = (dx / distance) * self.speed * dt
+                move_y = (dy / distance) * self.speed * dt
 
                 # Movimiento en eje X con verificación de colisión
                 self.x += move_x
@@ -118,6 +121,8 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
                 if self.waypoints and (not isinstance(current_state, states.entity_states.WalkState) or getattr(current_state, "direction", None) != direction):
                     self.state_machine.change("walk", direction=direction)
 
+    def update(self, dt: float) -> None:
+        self.movement(dt)
         self.state_machine.update(dt)
         super().update(dt)
 

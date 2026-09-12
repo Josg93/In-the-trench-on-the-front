@@ -8,6 +8,8 @@ from gale.timer import Timer
 
 from src.definitions import Entitys, Buildings
 from src.GameEntity import GameEntity
+from src.Labourer import Labourer
+from src.Soldier import Soldier
 from src.GameBuilding import GameBuilding
 
 import settings
@@ -17,7 +19,7 @@ class GameBattlefield():
     Gestiona el campo de batalla, el mapa, los edificios, las entidades,
     la cámara y los recursos de comida (extracción de 10 de comida cada 10 segundos).
     """
-    def __init__(self, map : Any = 1) -> None:
+    def __init__(self, map : Any = 1, camera : Camera = None) -> None:
         self.tilemap = load_tiled_map(settings.TILEMAPS[map])
         self.buildings = []
         self.entitys = []
@@ -25,18 +27,10 @@ class GameBattlefield():
         self.creatures = []
         self.selected_entity = None
         self.food = 0
-
+        self.camera = camera
         self.collision_rects = []
         for obj in self.tilemap.object_layers.get("collission", []):
             self.collision_rects.append(pygame.Rect(obj.x, obj.y, obj.width, obj.height))
-
-        self.camera = Camera(
-            settings.VIRTUAL_WIDTH,
-            settings.VIRTUAL_HEIGHT,
-            x=0,
-            y=self.tilemap.pixel_height,
-            bounds=pygame.Rect(0, 0, self.tilemap.pixel_width, self.tilemap.pixel_height)
-        )
 
         for obj in self.tilemap.object_layers.get("buildings", []):
             self.add_building(obj)
@@ -45,12 +39,8 @@ class GameBattlefield():
             self.add_entity(obj)
 
         # Sistema de extracción de comida: cada 10 segundos genera 10 de comida
-        Timer.every(10.0, self.extract_food)
-
-    def extract_food(self) -> None:
-        self.food += 10
-        print(f"[Recurso] Comida extraída del molino: +10. Total comida: {self.food}")
-
+        
+  
     def add_entity(self, obj: Any) -> None:
         entity_type = obj.type if obj.type else "Man"
         definition = None
@@ -101,31 +91,14 @@ class GameBattlefield():
                 **definition
             )
         )
-   
-    def update(self, dt: float) -> None:
-        mouse_x, mouse_y = pygame.mouse.get_pos()
+    def mouse_to_virtual(self, mouse_x : float , mouse_y : float ):
         virtual_mouse_x = mouse_x * (settings.VIRTUAL_WIDTH / settings.WINDOW_WIDTH)
         virtual_mouse_y = mouse_y * (settings.VIRTUAL_HEIGHT / settings.WINDOW_HEIGHT)
-
-        margin = 50
-        scroll_speed = 1000
-        dx = 0
-        dy = 0
-
-        if virtual_mouse_x < margin:
-            dx = -scroll_speed
-        elif virtual_mouse_x > settings.VIRTUAL_WIDTH - margin:
-            dx = scroll_speed
-
-        if virtual_mouse_y < margin:
-            dy = -scroll_speed
-        elif virtual_mouse_y > settings.VIRTUAL_HEIGHT - margin:
-            dy = scroll_speed
-
-        self.camera.x += dx * dt
-        self.camera.y += dy * dt
-        self.camera.update(dt)
-
+        return (virtual_mouse_x, virtual_mouse_y)
+       
+    def update(self, dt: float) -> None:
+        
+        #actualizar entidades
         for entity in self.entitys:
             entity.update(dt)
 
@@ -149,12 +122,7 @@ class GameBattlefield():
                 if tile_rect.colliderect(rect):
                     return False
 
-            # Verificar colisión con hitboxes de edificios
-            for building in self.buildings:
-                if building.solid and building.collidable:
-                    if tile_rect.colliderect(building.get_collision_rect()):
-                        return False
-            return True
+            
 
         def neighbors_fn(node):
             r, c = node
@@ -188,8 +156,7 @@ class GameBattlefield():
     def on_input(self, input_id: str, input_data: Any) -> None:
         if hasattr(input_data, "pressed") and input_data.pressed:
             mouse_x, mouse_y = input_data.position
-            virtual_mouse_x = mouse_x * (settings.VIRTUAL_WIDTH / settings.WINDOW_WIDTH)
-            virtual_mouse_y = mouse_y * (settings.VIRTUAL_HEIGHT / settings.WINDOW_HEIGHT)
+            virtual_mouse_x , virtual_mouse_y = self.mouse_to_virtual(mouse_x, mouse_y)
             world_x, world_y = self.camera.screen_to_world((virtual_mouse_x, virtual_mouse_y))
 
             if input_id == "select_entity":
