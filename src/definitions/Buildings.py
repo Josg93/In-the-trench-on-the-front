@@ -7,8 +7,6 @@ CIVIL_BUILDINGS = {
         "height": 320,
         "collidable": True,
         "solid": True,
-        # Definimos offset y tamaño reducido para que la parte superior/centro sea sólida
-        # y la parte inferior (pasto) permita el tránsito de los labourers.
         "collision_offset_x": 130,
         "collision_offset_y": 150,
         "collision_width": 152,

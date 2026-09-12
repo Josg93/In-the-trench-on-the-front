@@ -71,8 +71,47 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
                 move_x = (dx / dist) * self.speed * dt
                 move_y = (dy / dist) * self.speed * dt
 
+                # Movimiento en eje X con verificación de colisión
                 self.x += move_x
+                if self.battlefield:
+                    entity_rect = self.get_collision_rect()
+                    collided = False
+                    for building in self.battlefield.buildings:
+                        if building.solid and building.collidable:
+                            if entity_rect.colliderect(building.get_collision_rect()):
+                                collided = True
+                                break
+                    if not collided and hasattr(self.battlefield, "collision_rects"):
+                        for rect in self.battlefield.collision_rects:
+                            if entity_rect.colliderect(rect):
+                                collided = True
+                                break
+                    if collided:
+                        self.x -= move_x
+                        self.waypoints = []
+                        self.target_position = None
+                        self.state_machine.change("idle")
+
+                # Movimiento en eje Y con verificación de colisión
                 self.y += move_y
+                if self.battlefield:
+                    entity_rect = self.get_collision_rect()
+                    collided = False
+                    for building in self.battlefield.buildings:
+                        if building.solid and building.collidable:
+                            if entity_rect.colliderect(building.get_collision_rect()):
+                                collided = True
+                                break
+                    if not collided and hasattr(self.battlefield, "collision_rects"):
+                        for rect in self.battlefield.collision_rects:
+                            if entity_rect.colliderect(rect):
+                                collided = True
+                                break
+                    if collided:
+                        self.y -= move_y
+                        self.waypoints = []
+                        self.target_position = None
+                        self.state_machine.change("idle")
 
                 from src import states
                 current_state = self.state_machine.current

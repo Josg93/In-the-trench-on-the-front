@@ -26,6 +26,10 @@ class GameBattlefield():
         self.selected_entity = None
         self.food = 0
 
+        self.collision_rects = []
+        for obj in self.tilemap.object_layers.get("collission", []):
+            self.collision_rects.append(pygame.Rect(obj.x, obj.y, obj.width, obj.height))
+
         self.camera = Camera(
             settings.VIRTUAL_WIDTH,
             settings.VIRTUAL_HEIGHT,
@@ -81,8 +85,8 @@ class GameBattlefield():
         else:
             definition = Buildings.CIVIL_BUILDINGS["mill"].copy()
 
-        width = obj.width if obj.width > 0 else definition.pop("width", 416)
-        height = obj.height if obj.height > 0 else definition.pop("height", 320)
+        width = obj.width if obj.width > 0 else definition.pop("width")
+        height = obj.height if obj.height > 0 else definition.pop("height")
         if "width" in definition:
             definition.pop("width")
         if "height" in definition:
@@ -134,22 +138,18 @@ class GameBattlefield():
         if not self.tilemap.in_bounds(start_r, start_c) or not self.tilemap.in_bounds(goal_r, goal_c):
             return []
 
-        walkable_layers = ['civil', 'barraks', 'death_zone']
-
         def is_walkable(r, c):
             if not self.tilemap.in_bounds(r, c):
                 return False
-            has_tile = False
-            for layer_name in walkable_layers:
-                layer = self.tilemap.get_layer(layer_name)
-                if layer and layer[r][c] != 0:
-                    has_tile = True
-                    break
-            if not has_tile:
-                return False
-
+            
+            # Verificar colisión con objetos de la capa 'collission'
             tx, ty = self.tilemap.position_of(r, c)
             tile_rect = pygame.Rect(tx, ty, self.tilemap.tile_width, self.tilemap.tile_height)
+            for rect in self.collision_rects:
+                if tile_rect.colliderect(rect):
+                    return False
+
+            # Verificar colisión con hitboxes de edificios
             for building in self.buildings:
                 if building.solid and building.collidable:
                     if tile_rect.colliderect(building.get_collision_rect()):
