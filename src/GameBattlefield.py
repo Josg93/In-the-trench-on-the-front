@@ -4,6 +4,7 @@ import pygame
 
 from gale.tilemap import load_tiled_map
 from gale.camera import Camera
+from gale.timer import Timer
 
 from src.definitions import Entitys, Buildings
 from src.GameEntity import GameEntity
@@ -12,6 +13,10 @@ from src.GameBuilding import GameBuilding
 import settings
 
 class GameBattlefield():
+    """
+    Gestiona el campo de batalla, el mapa, los edificios, las entidades,
+    la cámara y los recursos de comida (extracción de 10 de comida cada 10 segundos).
+    """
     def __init__(self, map : Any = 1) -> None:
         self.tilemap = load_tiled_map(settings.TILEMAPS[map])
         self.buildings = []
@@ -19,6 +24,7 @@ class GameBattlefield():
         self.items = []
         self.creatures = []
         self.selected_entity = None
+        self.food = 0
 
         self.camera = Camera(
             settings.VIRTUAL_WIDTH,
@@ -28,13 +34,19 @@ class GameBattlefield():
             bounds=pygame.Rect(0, 0, self.tilemap.pixel_width, self.tilemap.pixel_height)
         )
 
-        for obj in self.tilemap.object_layers.get("entitys", []):
-            self.add_entity(obj)
-
         for obj in self.tilemap.object_layers.get("buildings", []):
             self.add_building(obj)
 
-        
+        for obj in self.tilemap.object_layers.get("entitys", []):
+            self.add_entity(obj)
+
+        # Sistema de extracción de comida: cada 10 segundos genera 10 de comida
+        Timer.every(10.0, self.extract_food)
+
+    def extract_food(self) -> None:
+        self.food += 10
+        print(f"[Recurso] Comida extraída del molino: +10. Total comida: {self.food}")
+
     def add_entity(self, obj: Any) -> None:
         entity_type = obj.type if obj.type else "Man"
         definition = None
@@ -54,6 +66,7 @@ class GameBattlefield():
                 obj.y,
                 obj.width,
                 obj.height,
+                battlefield=self,
                 **definition
             )
         )
@@ -146,4 +159,3 @@ class GameBattlefield():
         for item in self.items:
             if item.active:
                 item.render(surface, self.camera)
-

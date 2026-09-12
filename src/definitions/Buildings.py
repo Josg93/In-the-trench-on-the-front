@@ -1,3 +1,4 @@
+# Definición de edificios civiles y militares con parámetros de colisión personalizados (hitboxes parciales)
 CIVIL_BUILDINGS = {
     "mill": {
         "texture_id": "buildings",
@@ -6,6 +7,12 @@ CIVIL_BUILDINGS = {
         "height": 320,
         "collidable": True,
         "solid": True,
+        # Definimos offset y tamaño reducido para que la parte superior/centro sea sólida
+        # y la parte inferior (pasto) permita el tránsito de los labourers.
+        "collision_offset_x": 40,
+        "collision_offset_y": 80,
+        "collision_width": 336,
+        "collision_height": 200,
     },
     "town": {
         "texture_id": "buildings",

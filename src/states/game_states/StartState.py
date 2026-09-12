@@ -1,9 +1,3 @@
-
-
-
-
-
-
 from gale.state import BaseState
 from gale.input_handler import InputData
 from gale.text import Text, render_text 
@@ -13,17 +7,22 @@ import settings
 
 class StartState(BaseState):
     def enter(self):
-        self.title = Text(
-            "In The trench on the front",
-            settings.FONTS["medium"],
-            settings.VIRTUAL_WIDTH,
-            settings.VIRTUAL_HEIGHT // 4,
-            (197, 195, 198),
-            shadowed=True,
-        ) 
+        pygame.mixer.music.play(loops=-1)
+
     def render(self, surface : pygame.Surface):
         surface.blit(settings.TEXTURES["background"],(0 , 0) )
-        self.title.render(surface)
+        #self.title.render(surface)
+        
+        render_text(
+            surface,
+            "In The trench on the front",
+            settings.FONTS["medium"],
+            settings.VIRTUAL_WIDTH // 2,
+            50,
+            (197, 195, 198),
+            center= True,
+            shadowed=True,
+        )
         
         render_text(
             surface,
