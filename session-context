@@ -1,0 +1,20 @@
+# Session Context & Progress Report
+
+## Summary of Recent Additions & Features
+
+1. **Labourer Work Timer (`Labourer.py`)**:
+   - Added Gale `Timer.every(10, ...)` inside `Labourer.work()` to automatically add 10 to `self.battlefield.food` every 10 seconds.
+   - Stored timer reference (`self.work_timer`).
+
+2. **Stopping Work on Move/Away (`Labourer.py`, `GameEntity.py`, `GameBattlefield.py`)**:
+   - Added `stop_working()` method on `Labourer` to remove the timer, reset `is_working = False`, clear `assigned_building`, and change state to `"idle"`.
+   - Added checks in `GameEntity.movement()` and `GameBattlefield.on_input()` so that whenever a labourer is given new movement waypoints or moves away from its assigned building, `stop_working()` is triggered.
+
+3. **Building Selection & Assignment (`GameBuilding.py`, `GameBattlefield.py`)**:
+   - Right-clicking on a building with a selected labourer assigns the building, triggers a 1-second yellow highlight effect on the building's collision area, and walks the labourer to the center of the building.
+   - Reaching the building triggers `work()`.
+
+4. **Bottom Unit Creation HUD Panel (`PlayState.py`)**:
+   - Implemented a bottom UI panel with interactive buttons for creating **Labourer** (costs 100 food) and **Soldier** (costs 200 food).
+   - Displayed unit sprite thumbnails and cost labels on the buttons.
+   - Validates food balance (`>= 100` or `>= 200`), deducts resources, and spawns the new unit in the world.

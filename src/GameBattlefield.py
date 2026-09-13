@@ -72,6 +72,7 @@ class GameBattlefield():
                 **definition
             )
         )
+            
         else:
             definition = Entitys.LABOURERS.get("Man", {
                 "texture_id": "entitys",

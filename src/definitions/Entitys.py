@@ -70,7 +70,7 @@ SOLDIERS = {
                 "interval": 0.3,
             },
             "walk_left": {
-                "frames": [44],
+                "frames": [55],
                 "interval": 0.3,
             },
             "walk_right": {
@@ -85,7 +85,37 @@ SOLDIERS = {
                 "frames": [44],
                 "interval": 0.3,
             },
-            "work": {
+            "shot": {
+                "frames": [44],
+                "interval": 0.3,
+            },
+        }
+    },
+    "Soldier_enemy": {
+        "texture_id": "entitys",
+        "is_enemy": True,
+        "animations": {
+            "idle": {
+                "frames": [44],
+                "interval": 0.3,
+            },
+            "walk_left": {
+                "frames": [55],
+                "interval": 0.3,
+            },
+            "walk_right": {
+                "frames": [44],
+                "interval": 0.3,
+            },
+            "walk_up": {
+                "frames": [44],
+                "interval": 0.3,
+            },
+            "walk_down": {
+                "frames": [44],
+                "interval": 0.3,
+            },
+            "shot": {
                 "frames": [44],
                 "interval": 0.3,
             },
