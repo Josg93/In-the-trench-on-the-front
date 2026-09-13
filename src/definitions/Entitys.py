@@ -9,11 +9,11 @@ LABOURERS = {
                 "interval": 0.3,
             },
             "walk_left": {
-                "frames": [7,8,9,10,11,12,13],
+                "frames": [11,12,13,14,15,16,17],
                 "interval": 0.2,
             },
             "walk_right": {
-                "frames": [1,2,3,4,5,6],
+                "frames": [0,1,2,3,4,5,6],
                 "interval": 0.2,
             },
             "walk_up": {
@@ -25,8 +25,8 @@ LABOURERS = {
                 "interval": 0.3,
             },
             "work": {
-                "frames": [9, 10],
-                "interval": 4.0,
+                "frames": [7,8,9],
+                "interval": 0.3,
             },
         }
     },
@@ -34,27 +34,27 @@ LABOURERS = {
         "texture_id": "entitys",
         "animations": {
             "idle": {
-                "frames": [14],
+                "frames": [22],
                 "interval": 0.3,
             },
             "walk_left": {
-                "frames": [21,22,23,24,25,26,27],
+                "frames": [33,34,35,36,37,38,39],
                 "interval": 0.3,
             },
             "walk_right": {
-                "frames": [14,15,16,17,18,19,20],
+                "frames": [22,23,24,25,26,27,28],
                 "interval": 0.3,
             },
             "walk_up": {
-                "frames": [14,15,16,17,18,19,20],
+                "frames": [22,23,24,25,26,27,28],
                 "interval": 0.3,
             },
             "walk_down": {
-                "frames": [14,15,16,17,18,19,20],
+                "frames": [22,23,24,25,26,27,28],
                 "interval": 0.3,
             },
             "work": {
-                "frames": [8, 9,10,11,12],
+                "frames": [29,30,31,32],
                 "interval": 0.3,
             },
         }

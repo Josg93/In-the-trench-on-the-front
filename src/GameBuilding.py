@@ -36,6 +36,14 @@ class GameBuilding(mixins.DrawableMixin, mixins.CollidableMixin):
         self.collision_offset_y = collision_offset_y
         self.collision_width = collision_width if collision_width is not None else width
         self.collision_height = collision_height if collision_height is not None else height
+        self.highlight_timer = 0
+
+    def highlight(self):
+        self.highlight_timer = 1.0
+
+    def update(self, dt: float) -> None:
+        if self.highlight_timer > 0:
+            self.highlight_timer -= dt
 
     def get_collision_rect(self) -> pygame.Rect:
         """
@@ -47,3 +55,10 @@ class GameBuilding(mixins.DrawableMixin, mixins.CollidableMixin):
             self.collision_width,
             self.collision_height,
         )
+
+    def render(self, surface: pygame.Surface, camera: Any) -> None:
+        super().render(surface, camera)
+        if self.highlight_timer > 0:
+            rect = self.get_collision_rect()
+            applied_rect = camera.apply(rect)
+            pygame.draw.rect(surface, (255, 255, 0), applied_rect, 3)

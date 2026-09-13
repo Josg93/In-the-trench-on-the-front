@@ -46,7 +46,19 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
     def get_collision_rect(self) -> pygame.Rect:
         return pygame.Rect(round(self.x), round(self.y), self.width, self.height)
 
+    def get_work_rect(self) -> pygame.Rect:
+        return pygame.Rect(round(self.x), round(self.y + 64), self.width, 32)
+        
     def movement(self, dt : float):
+        if getattr(self, "is_working", False) and self.waypoints:
+            if hasattr(self, "stop_working"):
+                self.stop_working()
+
+        if getattr(self, "is_working", False) and self.assigned_building:
+            if not self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect()):
+                if hasattr(self, "stop_working"):
+                    self.stop_working()
+
         if self.waypoints:
             target_x, target_y = self.waypoints[0]
             dx = target_x - self.x
@@ -60,7 +72,10 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
                     
                     self.target_position = None
                     if self.assigned_building and self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect()):
-                        self.state_machine.change("work")
+                        if hasattr(self, "work"):
+                            self.work()
+                        else:
+                            self.state_machine.change("work")
                     else:
                         self.assigned_building = None
                         self.state_machine.change("idle")
@@ -77,7 +92,7 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
                 # Movimiento en eje X con verificación de colisión
                 self.x += move_x
                 if self.battlefield:
-                    entity_rect = self.get_collision_rect()
+                    entity_rect = self.get_work_rect()
                     collided = False
                     for building in self.battlefield.buildings:
                         if building.solid and building.collidable:
@@ -98,7 +113,7 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
                 # Movimiento en eje Y con verificación de colisión
                 self.y += move_y
                 if self.battlefield:
-                    entity_rect = self.get_collision_rect()
+                    entity_rect = self.get_work_rect()
                     collided = False
                     for building in self.battlefield.buildings:
                         if building.solid and building.collidable:

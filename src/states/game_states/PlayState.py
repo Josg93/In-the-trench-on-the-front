@@ -11,9 +11,6 @@ import settings
 
 class PlayState(BaseState , DrawableMixin):
     def enter(self, level: Any = 1) -> None:
-      
-        
-
         self.camera = Camera(
             settings.VIRTUAL_WIDTH,
             settings.VIRTUAL_HEIGHT,
@@ -57,29 +54,27 @@ class PlayState(BaseState , DrawableMixin):
         
         self.scroll(dt)
 
-        # manejar actividades de las entidades y producción de comida
-        working_count = 0
+        # manejar actividades de las entidades
         for entity in self.battlefield.entitys:
-            if entity.assigned_building is not None:   
-                if getattr(entity, "entity_type", "Man") in ["Man", "Woman"]:
-                    entity_rect =  entity.get_collision_rect()
+            # poner a hacer algo a las entidades
+            if entity.assigned_building is not None:
+                #poner a trabajar a los labourers    
+                if getattr(entity, "entity_type") in ["Man", "Woman"]:
+                    entity_rect =  entity.get_work_rect()
                     if entity_rect.colliderect(entity.assigned_building.get_collision_rect()):
                         entity.work()  
                         
+                # poner a trabajar a los soldiers        
                 if getattr(entity, "entity_type", "") == "Soldier":
-                    entity_rect =  entity.get_collision_rect()
+                    entity_rect =  entity.get_work_rect()
                     if entity_rect.colliderect(entity.assigned_building.get_collision_rect()):
                         if hasattr(entity, "trench"):
                             entity.trench() 
 
-            if hasattr(entity, "state_machine") and entity.state_machine and hasattr(entity.state_machine, "current"):
-                from src.states.entity_states.WorkState import WorkState
-                if isinstance(entity.state_machine.current, WorkState):
-                    working_count += 1
+        #cambiar estadisticas del juego con las actividades de las entidades:
+        
+            
 
-        if working_count > 0:
-            self.battlefield.food += 1.0 * dt * working_count
-                
                 
     def on_input(self, input_id: str, input_data: Any) -> None:
         if hasattr(self.battlefield, "on_input"):
@@ -87,6 +82,7 @@ class PlayState(BaseState , DrawableMixin):
 
     def render(self, surface: pygame.Surface) -> None:
         self.battlefield.render(surface)
+        #-670 y -350
         box_rect = pygame.Rect(self.camera.x -670, self.camera.y -350, 220, 60)
         applied_rect = self.camera.apply(box_rect)
         pygame.draw.rect(surface, (50, 50, 50), applied_rect)

@@ -43,13 +43,14 @@ TEXTURES = {
     "tiles": pygame.image.load(BASE_DIR / "assets" / "graphics" / "tileset.png"),
     "entitys": pygame.image.load(BASE_DIR / "assets" / "graphics" / "entitys.png"),
     "buildings": pygame.image.load(BASE_DIR / "assets" / "graphics" / "buildings.png"),
-    
+    "barracks": pygame.image.load(BASE_DIR / "assets" / "graphics" / "barracks.png"),
 }
 
 FRAMES = {
     "tiles": frames.generate_frames(TEXTURES["tiles"], 16, 16),
     "entitys": frames.generate_frames(TEXTURES["entitys"], 64,96),
     "buildings": frames.generate_frames(TEXTURES["buildings"], 416, 320),
+    "barracks": frames.generate_frames(TEXTURES["barracks"], 347, 321),
 }
 
 FONTS = {

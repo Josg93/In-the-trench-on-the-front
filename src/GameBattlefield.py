@@ -23,10 +23,13 @@ class GameBattlefield():
         self.tilemap = load_tiled_map(settings.TILEMAPS[map])
         self.buildings = []
         self.entitys = []
-        self.items = []
-        self.creatures = []
         self.selected_entity = None
+        
+        # atributos de estadisticas de juego:
         self.food = 0
+        
+        
+        
         self.camera = camera
         self.collision_rects = []
         for obj in self.tilemap.object_layers.get("collission", []):
@@ -38,7 +41,7 @@ class GameBattlefield():
         for obj in self.tilemap.object_layers.get("entitys", []):
             self.add_entity(obj)
 
-        # Sistema de extracción de comida: cada 10 segundos genera 10 de comida
+        
         
   
     def add_entity(self, obj: Any) -> None:
@@ -46,16 +49,8 @@ class GameBattlefield():
         definition = None
         if entity_type in Entitys.LABOURERS:
             definition = Entitys.LABOURERS[entity_type]
-        elif entity_type in Entitys.SOLDIERS:
-            definition = Entitys.SOLDIERS[entity_type]
-        else:
-            definition = Entitys.LABOURERS.get("Man", {
-                "texture_id": "entitys",
-                "animations": {"idle": {"frames": [0], "interval": 0.1}}
-            })
-
-        self.entitys.append(
-            GameEntity(
+            self.entitys.append(
+            Labourer(
                 obj.x,
                 obj.y,
                 obj.width,
@@ -64,6 +59,26 @@ class GameBattlefield():
                 **definition
             )
         )
+            
+        elif entity_type in Entitys.SOLDIERS:
+            definition = Entitys.SOLDIERS[entity_type]
+            self.entitys.append(
+            Soldier(
+                obj.x,
+                obj.y,
+                obj.width,
+                obj.height,
+                battlefield=self,
+                **definition
+            )
+        )
+        else:
+            definition = Entitys.LABOURERS.get("Man", {
+                "texture_id": "entitys",
+                "animations": {"idle": {"frames": [0], "interval": 0.1}}
+            })
+
+        
 
     def add_building(self, obj: Any) -> None:
         b_type = obj.type if obj.type else "mill"
@@ -97,7 +112,9 @@ class GameBattlefield():
         return (virtual_mouse_x, virtual_mouse_y)
        
     def update(self, dt: float) -> None:
-        
+        for building in self.buildings:
+            building.update(dt)
+
         #actualizar entidades
         for entity in self.entitys:
             entity.update(dt)
@@ -159,10 +176,11 @@ class GameBattlefield():
             virtual_mouse_x , virtual_mouse_y = self.mouse_to_virtual(mouse_x, mouse_y)
             world_x, world_y = self.camera.screen_to_world((virtual_mouse_x, virtual_mouse_y))
 
+            #seleccionar entidad
             if input_id == "select_entity":
                 clicked_entity = None
                 for entity in self.entitys:
-                    rect = pygame.Rect(entity.x, entity.y, entity.width, entity.height)
+                    rect = entity.get_collision_rect()
                     if rect.collidepoint(world_x, world_y):
                         clicked_entity = entity
                         break
@@ -171,16 +189,41 @@ class GameBattlefield():
                     entity.selected = (entity == clicked_entity)
                 self.selected_entity = clicked_entity
 
+
             elif input_id == "move_entity":
                 if self.selected_entity is not None:
-                    entity_center = (self.selected_entity.x, self.selected_entity.y)
-                    waypoints = self.find_path(entity_center, (world_x, world_y))
-                    if waypoints:
-                        self.selected_entity.waypoints = waypoints
-                        self.selected_entity.target_position = (world_x, world_y)
+                    if hasattr(self.selected_entity, "stop_working"):
+                        self.selected_entity.stop_working()
+
+                    clicked_building = None
+                    if getattr(self.selected_entity, "entity_type") in ["Man", "Woman"]:
+                        for building in self.buildings:
+                            if building.get_collision_rect().collidepoint(world_x, world_y):
+                                clicked_building = building
+                                break
+
+                    if clicked_building is not None:
+                        self.selected_entity.assigned_building = clicked_building
+                        clicked_building.highlight()
+                        b_rect = clicked_building.get_collision_rect()
+                        target_x = b_rect.centerx
+                        target_y = b_rect.centery
+                        waypoints = self.find_path((self.selected_entity.x, self.selected_entity.y), (target_x, target_y))
+                        if waypoints:
+                            self.selected_entity.waypoints = waypoints
+                            self.selected_entity.target_position = (target_x, target_y)
+                        else:
+                            self.selected_entity.waypoints = [(target_x, target_y)]
+                            self.selected_entity.target_position = (target_x, target_y)
                     else:
-                        self.selected_entity.waypoints = [(world_x, world_y)]
-                        self.selected_entity.target_position = (world_x, world_y)
+                        entity_center = (self.selected_entity.x, self.selected_entity.y)
+                        waypoints = self.find_path(entity_center, (world_x, world_y))
+                        if waypoints:
+                            self.selected_entity.waypoints = waypoints
+                            self.selected_entity.target_position = (world_x, world_y)
+                        else:
+                            self.selected_entity.waypoints = [(world_x, world_y)]
+                            self.selected_entity.target_position = (world_x, world_y)
 
     def render(self, surface: pygame.Surface) -> None:
         self.tilemap.render(surface, self.camera)
@@ -188,8 +231,4 @@ class GameBattlefield():
             building.render(surface, self.camera)
         for entity in self.entitys:
             entity.render(surface, self.camera)
-        for creature in self.creatures:
-            creature.render(surface, self.camera)
-        for item in self.items:
-            if item.active:
-                item.render(surface, self.camera)
+        

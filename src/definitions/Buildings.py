@@ -24,8 +24,8 @@ CIVIL_BUILDINGS = {
 
 MILITARY_BUILDINGS = {
     "barracks": {
-        "texture_id": "buildings",
-        "frame_index": 2,
+        "texture_id": "barracks",
+        "frame_index": 0,
         "width": 128,
         "height": 128,
         "collidable": True,
