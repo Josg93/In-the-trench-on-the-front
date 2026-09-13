@@ -26,7 +26,7 @@ class GameBattlefield():
         self.selected_entity = None
         
         # atributos de estadisticas de juego:
-        self.food = 0
+        self.food = 10000
         
         
         
@@ -99,6 +99,7 @@ class GameBattlefield():
 
         self.buildings.append(
             GameBuilding(
+                obj.type,
                 obj.x,
                 obj.y,
                 width,

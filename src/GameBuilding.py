@@ -9,6 +9,7 @@ class GameBuilding(mixins.DrawableMixin, mixins.CollidableMixin):
     """
     def __init__(
         self,
+        type: str,
         x: float,
         y: float,
         width: float,
@@ -22,6 +23,7 @@ class GameBuilding(mixins.DrawableMixin, mixins.CollidableMixin):
         collision_width: float = None,
         collision_height: float = None,
     ) -> None:
+        self.type = type
         self.x = x
         self.y = y
         self.width = width

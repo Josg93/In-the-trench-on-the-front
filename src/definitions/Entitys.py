@@ -66,28 +66,28 @@ SOLDIERS = {
         "texture_id": "entitys",
         "animations": {
             "idle": {
-                "frames": [0],
-                "interval": 0.1,
+                "frames": [44],
+                "interval": 0.3,
             },
             "walk_left": {
-                "frames": [1, 2],
-                "interval": 0.1,
+                "frames": [44],
+                "interval": 0.3,
             },
             "walk_right": {
-                "frames": [3, 4],
-                "interval": 0.1,
+                "frames": [44],
+                "interval": 0.3,
             },
             "walk_up": {
-                "frames": [5, 6],
-                "interval": 0.1,
+                "frames": [44],
+                "interval": 0.3,
             },
             "walk_down": {
-                "frames": [7, 8],
-                "interval": 0.1,
+                "frames": [44],
+                "interval": 0.3,
             },
             "work": {
-                "frames": [9, 10],
-                "interval": 0.1,
+                "frames": [44],
+                "interval": 0.3,
             },
         }
     }
