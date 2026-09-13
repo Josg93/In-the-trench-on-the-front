@@ -96,15 +96,15 @@ SOLDIERS = {
         "is_enemy": True,
         "animations": {
             "idle": {
-                "frames": [44],
+                "frames": [66],
                 "interval": 0.3,
             },
             "walk_left": {
-                "frames": [55],
+                "frames": [77],
                 "interval": 0.3,
             },
             "walk_right": {
-                "frames": [44],
+                "frames": [66],
                 "interval": 0.3,
             },
             "walk_up": {

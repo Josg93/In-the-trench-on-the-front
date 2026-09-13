@@ -48,36 +48,49 @@ class GameBattlefield():
         entity_type = obj.type if obj.type else "Man"
         definition = None
         if entity_type in Entitys.LABOURERS:
-            definition = Entitys.LABOURERS[entity_type]
+            definition = Entitys.LABOURERS[entity_type].copy()
             self.entitys.append(
-            Labourer(
-                obj.x,
-                obj.y,
-                obj.width,
-                obj.height,
-                battlefield=self,
-                **definition
+                Labourer(
+                    obj.x,
+                    obj.y,
+                    obj.width,
+                    obj.height,
+                    battlefield=self,
+                    entity_type=entity_type,
+                    **definition
+                )
             )
-        )
             
         elif entity_type in Entitys.SOLDIERS:
-            definition = Entitys.SOLDIERS[entity_type]
+            definition = Entitys.SOLDIERS[entity_type].copy()
             self.entitys.append(
-            Soldier(
-                obj.x,
-                obj.y,
-                obj.width,
-                obj.height,
-                battlefield=self,
-                **definition
+                Soldier(
+                    obj.x,
+                    obj.y,
+                    obj.width,
+                    obj.height,
+                    battlefield=self,
+                    entity_type=entity_type,
+                    **definition
+                )
             )
-        )
             
         else:
             definition = Entitys.LABOURERS.get("Man", {
                 "texture_id": "entitys",
                 "animations": {"idle": {"frames": [0], "interval": 0.1}}
             })
+            self.entitys.append(
+                Labourer(
+                    obj.x,
+                    obj.y,
+                    obj.width,
+                    obj.height,
+                    battlefield=self,
+                    entity_type="Man",
+                    **definition
+                )
+            )
 
         
 

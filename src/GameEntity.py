@@ -32,6 +32,9 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
         self.selected = False
         self.target_position = None
         self.waypoints = []
+        self.hp = 50
+        self.max_hp = 50
+        self.is_enemy = False
         self.generate_animations(animations)
 
         from src import states
@@ -146,3 +149,16 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
         if self.selected:
             dest = camera.apply(pygame.Rect(self.x, self.y, self.width, self.height))
             pygame.draw.rect(surface, (0, 255, 0), dest, 2)
+
+        # Renderizar barra de vida si la entidad ha perdido HP
+        if hasattr(self, "hp") and hasattr(self, "max_hp") and self.hp < self.max_hp:
+            bar_width = self.width
+            bar_height = 6
+            bar_x = self.x
+            bar_y = self.y - 10
+            dest = camera.apply(pygame.Rect(bar_x, bar_y, bar_width, bar_height))
+            pygame.draw.rect(surface, (200, 0, 0), dest)
+            current_width = max(0, int(bar_width * (self.hp / self.max_hp)))
+            current_rect = pygame.Rect(dest.x, dest.y, current_width, bar_height)
+            pygame.draw.rect(surface, (0, 200, 0), current_rect)
+            pygame.draw.rect(surface, (255, 255, 255), dest, 1)
