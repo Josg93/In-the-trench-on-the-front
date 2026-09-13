@@ -16,9 +16,9 @@ class StartState(BaseState):
         render_text(
             surface,
             "In The trench on the front",
-            settings.FONTS["medium"],
+            settings.FONTS["big"],
             settings.VIRTUAL_WIDTH // 2,
-            50,
+            170,
             (197, 195, 198),
             center= True,
             shadowed=True,
@@ -27,7 +27,7 @@ class StartState(BaseState):
         render_text(
             surface,
             "Press Enter",
-            settings.FONTS["small"],
+            settings.FONTS["medium"],
             settings.VIRTUAL_WIDTH // 2,
             settings.VIRTUAL_HEIGHT // 2 + 40,
             (197, 195, 198),

@@ -2,6 +2,9 @@ from typing import Any
 from pygame import Surface
 from src.GameEntity import GameEntity 
 import pygame
+import settings
+
+import random
 
 class Soldier(GameEntity):
     """
@@ -18,12 +21,14 @@ class Soldier(GameEntity):
                  speed: float = 60, 
                  battlefield: Any = None, 
                  entity_type: str = "Soldier",
+                 waypoints : list = [],
+                 target_position: tuple = None,  
                  is_enemy: bool = False,
                  hp: int = 100,
                  attack_power: int = 15,
-                 attack_range: float = 150.0,
+                 attack_range: float = 1000,
                  attack_cooldown: float = 1.0) -> None:
-        super().__init__(x, y, width, height, texture_id, animations, speed, battlefield, entity_type)
+        super().__init__(x, y, width, height, texture_id, animations, speed, battlefield, entity_type, waypoints, target_position)
         self.is_enemy = is_enemy
         self.hp = hp
         self.max_hp = hp
@@ -50,22 +55,31 @@ class Soldier(GameEntity):
                         min_dist = dist
                         closest_enemy = entity
 
+            # Si hay un enemigo en rango, detener el movimiento para enfocar el combate
             if closest_enemy is not None:
-                # Si hay un enemigo en rango, detener el movimiento para enfocar el combate
-                self.waypoints = []
-                if self.attack_timer <= 0:
-                    # Infligir daño al enemigo y reiniciar el cooldown
-                    closest_enemy.hp -= self.attack_power
-                    self.attack_timer = self.attack_cooldown
-
-            # Limpiar del campo de batalla a todas las entidades cuya vida (HP) sea <= 0
-            self.battlefield.entitys = [e for e in self.battlefield.entitys if getattr(e, "hp", 100) > 0]
-
+                self.shoot(closest_enemy)
+            
         super().update(dt)
     
-    def shoot(self):
-        # Lógica opcional para animación de disparo
-        pass
+    def shoot(self, closest_enemy : GameEntity):
+        self.waypoints = []
+                
+        if self.attack_timer <= 0:
+            # Infligir daño al enemigo y reiniciar el cooldown
+            if self.is_enemy is False:
+                settings.SOUNDS["shoot1"].stop()
+                settings.SOUNDS["shoot1"].play()
+                
+            else:
+                settings.SOUNDS["shoot2"].stop()
+                settings.SOUNDS["shoot2"].play() 
+            error = random.randint(0,10)    
+            closest_enemy.hp -= self.attack_power + error
+            self.attack_timer = self.attack_cooldown
+        
+          
+
+        
     
     def trench(self):
         # Lógica para interactuar con trincheras

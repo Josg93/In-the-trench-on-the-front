@@ -49,6 +49,7 @@ class GameBattlefield():
         definition = None
         if entity_type in Entitys.LABOURERS:
             definition = Entitys.LABOURERS[entity_type].copy()
+            birth_way = self.find_path((obj.x, obj.y), (417, 862))
             self.entitys.append(
                 Labourer(
                     obj.x,
@@ -57,6 +58,8 @@ class GameBattlefield():
                     obj.height,
                     battlefield=self,
                     entity_type=entity_type,
+                    waypoints = birth_way, 
+                    target_position = (417,862),
                     **definition
                 )
             )
@@ -88,6 +91,7 @@ class GameBattlefield():
                     obj.height,
                     battlefield=self,
                     entity_type="Man",
+                    waypoints = self.find_path((obj.x, obj.y), (417, 862)),
                     **definition
                 )
             )
@@ -133,6 +137,8 @@ class GameBattlefield():
         #actualizar entidades
         for entity in self.entitys:
             entity.update(dt)
+       
+        self.entitys = [e for e in self.entitys if getattr(e, "hp", 100) > 0]    
 
     def find_path(self, start_pos: tuple, goal_pos: tuple) -> list:
         from gale.ai.search import a_star
@@ -196,7 +202,7 @@ class GameBattlefield():
                 clicked_entity = None
                 for entity in self.entitys:
                     rect = entity.get_collision_rect()
-                    if rect.collidepoint(world_x, world_y):
+                    if rect.collidepoint(world_x, world_y) and entity.is_enemy is False :
                         clicked_entity = entity
                         break
 

@@ -58,9 +58,11 @@ FRAMES = {
 FONTS = {
     "small": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "font.ttf", 8),
     "medium": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "font.ttf", 16),
-    "big": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "font.ttf", 32),
+    "big": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "font.ttf", 64),
 }
 
 SOUNDS ={
-	"menu_theme" : pygame.mixer.music.load(BASE_DIR / "assets" / "sounds" / "menu_theme.mp3")
+	"menu_theme" : pygame.mixer.music.load(BASE_DIR / "assets" / "sounds" / "menu_theme.mp3"),
+    "shoot1": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "communist_shoot.mp3"),
+    "shoot2": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "good_man_shoot.mp3"),
 }

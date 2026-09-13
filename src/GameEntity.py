@@ -15,6 +15,8 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
         speed: float = 60.0,
         battlefield: Any = None,
         entity_type: str = "Man",
+        waypoints: list = [],
+        target_position: tuple = None   
     ) -> None:
         self.x = x
         self.y = y
@@ -30,8 +32,8 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
         self.frame_index = 0
         self.flipped = False
         self.selected = False
-        self.target_position = None
-        self.waypoints = []
+        self.target_position = target_position
+        self.waypoints = waypoints if waypoints is not None else [] 
         self.hp = 50
         self.max_hp = 50
         self.is_enemy = False
@@ -97,42 +99,64 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
                 if self.battlefield:
                     entity_rect = self.get_work_rect()
                     collided = False
+                    building_collided = False
                     for building in self.battlefield.buildings:
                         if building.solid and building.collidable:
                             if entity_rect.colliderect(building.get_collision_rect()):
                                 collided = True
+                                building_collided = True
                                 break
+
+                    for entity in self.battlefield.entitys:
+                        if entity != self and entity_rect.colliderect(entity.get_work_rect()):
+                            collided = True
+                            break
+                            
                     if not collided and hasattr(self.battlefield, "collision_rects"):
                         for rect in self.battlefield.collision_rects:
                             if entity_rect.colliderect(rect):
                                 collided = True
+                                building_collided = True
                                 break
+
                     if collided:
                         self.x -= move_x
-                        self.waypoints = []
-                        self.target_position = None
-                        self.state_machine.change("idle")
+                        if building_collided:
+                            self.waypoints = []
+                            self.target_position = None
+                            self.state_machine.change("idle")
 
                 # Movimiento en eje Y con verificación de colisión
                 self.y += move_y
                 if self.battlefield:
                     entity_rect = self.get_work_rect()
                     collided = False
+                    building_collided = False
                     for building in self.battlefield.buildings:
                         if building.solid and building.collidable:
                             if entity_rect.colliderect(building.get_collision_rect()):
                                 collided = True
+                                building_collided = True
                                 break
+
+                    for entity in self.battlefield.entitys:
+                        if entity != self and entity_rect.colliderect(entity.get_work_rect()):
+                            collided = True
+                            break
+                            
                     if not collided and hasattr(self.battlefield, "collision_rects"):
                         for rect in self.battlefield.collision_rects:
                             if entity_rect.colliderect(rect):
                                 collided = True
+                                building_collided = True
                                 break
+
                     if collided:
                         self.y -= move_y
-                        self.waypoints = []
-                        self.target_position = None
-                        self.state_machine.change("idle")
+                        if building_collided:
+                            self.waypoints = []
+                            self.target_position = None
+                            self.state_machine.change("idle")
 
                 from src import states
                 current_state = self.state_machine.current

@@ -14,8 +14,12 @@ class Labourer(GameEntity):
                  animations: dict, 
                  speed: float = 60, 
                  battlefield: Any = None, 
-                 entity_type: str = "Man") -> None:
-        super().__init__(x, y, width, height, texture_id, animations, speed, battlefield, entity_type)
+                 entity_type: str = "Man",
+                 waypoints : list = [],
+                 target_position: tuple = None  
+                 ) -> None:
+                 
+        super().__init__(x, y, width,height, texture_id, animations, speed, battlefield, entity_type, waypoints, target_position)
         self.is_working = False
         
     def update(self, dt: float) -> None:

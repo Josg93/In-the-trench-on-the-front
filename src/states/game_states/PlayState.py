@@ -21,6 +21,10 @@ class PlayState(BaseState , DrawableMixin):
             bounds=pygame.Rect(0, 0,16000 , 1280)
         )
         self.battlefield = GameBattlefield(level, self.camera)
+        # Temporizadores para las oleadas de enemigos tras 30 segundos
+        self.game_timer = 0.0
+        self.enemy_spawn_timer = 0.0
+        self.enemies_started = False
     
     def mouse_to_virtual(self, mouse_x : float , mouse_y : float ):
         virtual_mouse_x = mouse_x * (settings.VIRTUAL_WIDTH / settings.WINDOW_WIDTH)
@@ -52,53 +56,120 @@ class PlayState(BaseState , DrawableMixin):
         self.camera.update(dt)
     
     def generate_entity(self, type : str) -> None:
+        
         if self.battlefield.food >= 100 and type == "labourer":
+            target_pos = (417, 862)
             self.battlefield.food -= 100
-            definition = Entitys.LABOURERS["Man"]
+            definition = Entitys.LABOURERS["Man"].copy()
             
-            spawn_x = 0 
-            spawn_y = settings.VIRTUAL_HEIGHT - settings.VIRTUAL_HEIGHT // 4
+            spawn_x = 10
+            spawn_y = 863
+            birth_way = self.battlefield.find_path((spawn_x, spawn_y), target_pos)
             
             new_labourer = Labourer(
                 x=spawn_x,
                 y=spawn_y,
                 width=64,
                 height=96,
-                texture_id="entitys",
-                animations=definition["animations"],
-                speed=60,
                 battlefield=self.battlefield,
-                entity_type="Man"
+                entity_type="Man",
+                waypoints=[target_pos],
+                target_position=target_pos,
+                **definition
             )
             self.battlefield.entitys.append(new_labourer)
             
         elif self.battlefield.food >= 200 and type == "soldier":
             self.battlefield.food -= 200
-            definition = Entitys.SOLDIERS["Soldier"]
+            target_pos = (3532,811)
+            definition = Entitys.SOLDIERS["Soldier"].copy()
             
+            spawn_x = 200
+            spawn_y = 1200
             for building in self.battlefield.buildings:
                 if building.type == "barracks":
-                    spawn_x, spawn_y = (building.x + building.width // 2, building.y + building.height )
+                    spawn_x, spawn_y = (building.x + building.width // 2, building.y + building.height)
             
+            birth_way = self.battlefield.find_path((spawn_x, spawn_y), target_pos)
             
             new_soldier = Soldier(
                 x=spawn_x,
                 y=spawn_y,
                 width=64,
                 height=96,
-                texture_id="entitys",
-                animations=definition["animations"],
-                speed=60,
                 battlefield=self.battlefield,
-                entity_type="Soldier"
+                entity_type="Soldier",
+                waypoints=[target_pos],
+                target_position=target_pos,
+                **definition
             )
             self.battlefield.entitys.append(new_soldier)
-    
+
+    def spawn_enemy_wave(self) -> None:
+        """
+        Genera una oleada de soldados enemigos desde el extremo derecho del mapa
+        con el objetivo de avanzar hacia el borde izquierdo (x = 0).
+        """
+        definition = Entitys.SOLDIERS["Soldier_enemy"].copy()
+        spawn_x = 15500
+        spawn_y = 800
+        left_edge = (0, spawn_y)
+
+        for i in range(3):  # Spawnea 3 enemigos por oleada
+            offset_y = spawn_y + (i * 50 - 50)
+            birth_way = self.battlefield.find_path((spawn_x, offset_y), left_edge)
+            enemy_soldier = Soldier(
+                x=spawn_x,
+                y=offset_y,
+                width=64,
+                height=96,
+                battlefield=self.battlefield,
+                entity_type="Soldier_enemy",
+                waypoints=birth_way if birth_way else [left_edge],
+                target_position=left_edge,
+                **definition
+            )
+            self.battlefield.entitys.append(enemy_soldier)
     
     def update(self, dt: float) -> None:
         self.battlefield.update(dt)
-        
         self.scroll(dt)
+
+        # ----------------- Temporizador y Oleadas de Enemigos (30 segundos) -----------------
+        self.game_timer += dt
+        if self.game_timer >= 30.0:
+            self.enemies_started = True
+            self.enemy_spawn_timer += dt
+            if self.enemy_spawn_timer >= 6.0:  # Cada 6 segundos genera una oleada de enemigos
+                self.enemy_spawn_timer = 0.0
+                self.spawn_enemy_wave()
+
+        # ----------------- Gestión de objetivos de los enemigos ----------------------------
+        # Los enemigos priorizan atacar a entidades amigas en rango; si no hay, avanzan hacia el borde izquierdo.
+        for entity in self.battlefield.entitys:
+            if getattr(entity, "is_enemy", False):
+                attack_range = getattr(entity, "attack_range", 150.0)
+                target_found = False
+
+                for other in self.battlefield.entitys:
+                    if not getattr(other, "is_enemy", False):
+                        dist = ((other.x - entity.x) ** 2 + (other.y - entity.y) ** 2) ** 0.5
+                        if dist <= attack_range:
+                            target_found = True
+                            # Detenerse para combatir
+                            entity.waypoints = []
+                            break
+
+                # Si no hay amigos en rango y no tiene ruta activa, avanzar hacia la izquierda (x = 0)
+                if not target_found and not entity.waypoints:
+                    left_edge = (0, entity.y)
+                    waypoints = self.battlefield.find_path((entity.x, entity.y), left_edge)
+                    if waypoints:
+                        entity.waypoints = waypoints
+                        entity.target_position = left_edge
+                    else:
+                        entity.waypoints = [left_edge]
+                        entity.target_position = left_edge
 
         # ----------------- manejar actividades de las entidades --------------------------
         for entity in self.battlefield.entitys:
