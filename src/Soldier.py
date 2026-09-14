@@ -63,6 +63,7 @@ class Soldier(GameEntity):
     
     def shoot(self, closest_enemy : GameEntity):
         self.waypoints = []
+        self.state_machine.change("shoot")
                 
         if self.attack_timer <= 0:
             # Infligir daño al enemigo y reiniciar el cooldown

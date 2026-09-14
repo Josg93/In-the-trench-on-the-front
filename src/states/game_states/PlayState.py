@@ -7,7 +7,8 @@ from src.Soldier import Soldier
 from src.definitions import Entitys
 from src.mixins import DrawableMixin
 from gale.camera import Camera
-
+from gale.timer import Timer
+import random
 import pygame
 import settings
 
@@ -56,9 +57,9 @@ class PlayState(BaseState , DrawableMixin):
         self.camera.update(dt)
     
     def generate_entity(self, type : str) -> None:
-        
+        target_y = random.randint(655,1171)
         if self.battlefield.food >= 100 and type == "labourer":
-            target_pos = (417, 862)
+            target_pos = (417, target_y)
             self.battlefield.food -= 100
             definition = Entitys.LABOURERS["Man"].copy()
             
@@ -81,7 +82,8 @@ class PlayState(BaseState , DrawableMixin):
             
         elif self.battlefield.food >= 200 and type == "soldier":
             self.battlefield.food -= 200
-            target_pos = (3532,811)
+            target_y = random.randint(655,1171)
+            target_pos = (3532,target_y)
             definition = Entitys.SOLDIERS["Soldier"].copy()
             
             spawn_x = 200
@@ -105,22 +107,24 @@ class PlayState(BaseState , DrawableMixin):
             )
             self.battlefield.entitys.append(new_soldier)
 
-    def spawn_enemy_wave(self) -> None:
+    def spawn_enemy_wave(self,) -> None:
         """
         Genera una oleada de soldados enemigos desde el extremo derecho del mapa
         con el objetivo de avanzar hacia el borde izquierdo (x = 0).
         """
+        
         definition = Entitys.SOLDIERS["Soldier_enemy"].copy()
+        target_y = random.randint(655,1100)
         spawn_x = 15500
-        spawn_y = 800
+        spawn_y = target_y
         left_edge = (0, spawn_y)
 
-        for i in range(3):  # Spawnea 3 enemigos por oleada
-            offset_y = spawn_y + (i * 50 - 50)
-            birth_way = self.battlefield.find_path((spawn_x, offset_y), left_edge)
+        for i in range(10):  # Spawnea 3 enemigos por oleada
+            
+            birth_way = self.battlefield.find_path((spawn_x, spawn_y), left_edge)
             enemy_soldier = Soldier(
                 x=spawn_x,
-                y=offset_y,
+                y=spawn_y,
                 width=64,
                 height=96,
                 battlefield=self.battlefield,
@@ -130,20 +134,15 @@ class PlayState(BaseState , DrawableMixin):
                 **definition
             )
             self.battlefield.entitys.append(enemy_soldier)
-    
+        
     def update(self, dt: float) -> None:
         self.battlefield.update(dt)
         self.scroll(dt)
 
         # ----------------- Temporizador y Oleadas de Enemigos (30 segundos) -----------------
-        self.game_timer += dt
-        if self.game_timer >= 30.0:
-            self.enemies_started = True
-            self.enemy_spawn_timer += dt
-            if self.enemy_spawn_timer >= 6.0:  # Cada 6 segundos genera una oleada de enemigos
-                self.enemy_spawn_timer = 0.0
-                self.spawn_enemy_wave()
-
+        wave = 1
+        Timer.every(10.0, lambda : self.spawn_enemy_wave(), limit=5)
+        
         # ----------------- Gestión de objetivos de los enemigos ----------------------------
         # Los enemigos priorizan atacar a entidades amigas en rango; si no hay, avanzan hacia el borde izquierdo.
         for entity in self.battlefield.entitys:

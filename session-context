@@ -14,7 +14,21 @@
    - Right-clicking on a building with a selected labourer assigns the building, triggers a 1-second yellow highlight effect on the building's collision area, and walks the labourer to the center of the building.
    - Reaching the building triggers `work()`.
 
-4. **Bottom Unit Creation HUD Panel (`PlayState.py`)**:
+4. **Bottom Unit Creation HUD Panel & Costs (`PlayState.py`)**:
    - Implemented a bottom UI panel with interactive buttons for creating **Labourer** (costs 100 food) and **Soldier** (costs 200 food).
-   - Displayed unit sprite thumbnails and cost labels on the buttons.
-   - Validates food balance (`>= 100` or `>= 200`), deducts resources, and spawns the new unit in the world.
+   - Validates food balance, deducts resources, and spawns new units with initial spawn waypoints towards target destinations.
+
+5. **Entity-to-Entity Collision Management (`GameEntity.py`)**:
+   - Implemented collision checks using `get_work_rect()` on both X and Y axes between entities to prevent stacking/overlapping in the same frame without permanently freezing navigation.
+
+6. **Combat System & Health Bars (`GameEntity.py`, `Soldier.py`, `Entitys.py`)**:
+   - Added combat attributes (`hp`, `max_hp`, `attack_power`, `attack_range`, `is_enemy`).
+   - Implemented target detection and attack cooldown logic in `Soldier.update()` to engage enemy units.
+   - Added dynamic HP bar rendering above entities.
+
+7. **Enemy Waves & Target Management (`PlayState.py`)**:
+   - Implemented a 30-second game timer in `PlayState` after which enemy waves (`Soldier_enemy`) spawn periodically from the right side of the map targeting the left edge (`x = 0`).
+   - Managed enemy AI to prioritize attacking friendly units in range and resuming their march toward the left edge.
+
+8. **Shoot State (`ShootState.py`, `Soldier.py`, `GameEntity.py`)**:
+   - Created `ShootState` to switch the animation to `"shoot"` when soldiers engage targets in combat.

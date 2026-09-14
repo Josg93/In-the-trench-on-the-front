@@ -44,6 +44,7 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
             "idle": states.entity_states.IdleState,
             "walk": states.entity_states.WalkState,
             "work": states.entity_states.WorkState,
+            "shoot": states.entity_states.ShootState,
         })
         self.state_machine.entity = self
         self.state_machine.change("idle")

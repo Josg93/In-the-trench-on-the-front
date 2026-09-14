@@ -70,11 +70,11 @@ SOLDIERS = {
                 "interval": 0.3,
             },
             "walk_left": {
-                "frames": [55],
+                "frames": [56,57,58],
                 "interval": 0.3,
             },
             "walk_right": {
-                "frames": [44],
+                "frames": [45,46,47],
                 "interval": 0.3,
             },
             "walk_up": {
@@ -85,8 +85,9 @@ SOLDIERS = {
                 "frames": [44],
                 "interval": 0.3,
             },
-            "shot": {
-                "frames": [44],
+            "shoot": {
+                "texture_id": "shooting",
+                "frames": [0,1,2],
                 "interval": 0.3,
             },
         }
@@ -100,23 +101,24 @@ SOLDIERS = {
                 "interval": 0.3,
             },
             "walk_left": {
-                "frames": [77],
+                "frames": [78,79,80],
                 "interval": 0.3,
             },
             "walk_right": {
-                "frames": [66],
+                "frames": [67,68,69],
                 "interval": 0.3,
             },
             "walk_up": {
-                "frames": [44],
+                "frames": [66],
                 "interval": 0.3,
             },
             "walk_down": {
-                "frames": [44],
+                "frames": [66],
                 "interval": 0.3,
             },
-            "shot": {
-                "frames": [44],
+            "shoot": {
+                "texture_id": "shooting",
+                "frames": [9,10,11],
                 "interval": 0.3,
             },
         }

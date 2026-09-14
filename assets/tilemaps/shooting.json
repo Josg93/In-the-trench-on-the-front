@@ -1,0 +1,15 @@
+{ "columns":3,
+ "image":"..\/graphics\/shooting.png",
+ "imageheight":386,
+ "imagewidth":361,
+ "margin":0,
+ "name":"shooting",
+ "spacing":0,
+ "tilecount":12,
+ "tiledversion":"1.12.2",
+ "tileheight":96,
+ "tilewidth":120,
+ "transparentcolor":"#000000",
+ "type":"tileset",
+ "version":"1.10"
+}

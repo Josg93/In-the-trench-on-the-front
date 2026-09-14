@@ -41,7 +41,10 @@ TILEMAPS = {
 TEXTURES = {
     "background": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "background_menu.jpeg"),
     "tiles": pygame.image.load(BASE_DIR / "assets" / "graphics" / "tileset.png"),
+    
     "entitys": pygame.image.load(BASE_DIR / "assets" / "graphics" / "entitys.png"),
+    "shooting": pygame.image.load(BASE_DIR / "assets" / "graphics" / "shooting.png"),
+    
     "buildings": pygame.image.load(BASE_DIR / "assets" / "graphics" / "buildings.png"),
     "barracks": pygame.image.load(BASE_DIR / "assets" / "graphics" / "barracks.png"),
     "trench": pygame.image.load(BASE_DIR / "assets" / "graphics" / "trench.png"),
@@ -50,6 +53,7 @@ TEXTURES = {
 FRAMES = {
     "tiles": frames.generate_frames(TEXTURES["tiles"], 16, 16),
     "entitys": frames.generate_frames(TEXTURES["entitys"], 64,96),
+    "shooting": frames.generate_frames(TEXTURES["shooting"], 120,96),
     "buildings": frames.generate_frames(TEXTURES["buildings"], 416, 320),
     "barracks": frames.generate_frames(TEXTURES["barracks"], 347, 321),
     "trench": frames.generate_frames(TEXTURES["trench"], 384, 672),
