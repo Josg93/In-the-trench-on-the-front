@@ -15,7 +15,7 @@
    - Reaching the building triggers `work()`.
 
 4. **Bottom Unit Creation HUD Panel & Costs (`PlayState.py`)**:
-   - Implemented a bottom UI panel with interactive buttons for creating **Labourer** (costs 100 food) and **Soldier** (costs 200 food).
+   - Implemented a bottom UI panel with interactive buttons for creating **Labourer** (costs 100 food) and **Soldier** (costs 200 food) with thumbnail icons.
    - Validates food balance, deducts resources, and spawns new units with initial spawn waypoints towards target destinations.
 
 5. **Entity-to-Entity Collision Management (`GameEntity.py`)**:
@@ -30,5 +30,7 @@
    - Implemented a 30-second game timer in `PlayState` after which enemy waves (`Soldier_enemy`) spawn periodically from the right side of the map targeting the left edge (`x = 0`).
    - Managed enemy AI to prioritize attacking friendly units in range and resuming their march toward the left edge.
 
-8. **Shoot State (`ShootState.py`, `Soldier.py`, `GameEntity.py`)**:
-   - Created `ShootState` to switch the animation to `"shoot"` when soldiers engage targets in combat.
+8. **Shoot State & Multi-Texture Animations (`ShootState.py`, `AnimatedMixin.py`, `DrawableMixin.py`, `Entitys.py`, `Soldier.py`)**:
+   - Created `ShootState` to switch animation to `"shoot"`.
+   - Enhanced `AnimatedMixin` and `DrawableMixin` to support state-specific `texture_id` per animation (e.g., using the `"shooting"` sprite sheet texture for shooting states while keeping other states on `"entitys"`).
+   - Added safe attribute checks (`getattr(self, "current_animation", None)`) in `DrawableMixin` so static objects like `GameBuilding` render without errors.

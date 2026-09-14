@@ -48,6 +48,7 @@ TEXTURES = {
     "buildings": pygame.image.load(BASE_DIR / "assets" / "graphics" / "buildings.png"),
     "barracks": pygame.image.load(BASE_DIR / "assets" / "graphics" / "barracks.png"),
     "trench": pygame.image.load(BASE_DIR / "assets" / "graphics" / "trench.png"),
+    "town1": pygame.image.load(BASE_DIR / "assets" / "graphics" / "town1.png"), 
 }
 
 FRAMES = {
@@ -57,6 +58,7 @@ FRAMES = {
     "buildings": frames.generate_frames(TEXTURES["buildings"], 416, 320),
     "barracks": frames.generate_frames(TEXTURES["barracks"], 347, 321),
     "trench": frames.generate_frames(TEXTURES["trench"], 384, 672),
+    "town1": frames.generate_frames(TEXTURES["town1"], 190, 596),
 }
 
 FONTS = {

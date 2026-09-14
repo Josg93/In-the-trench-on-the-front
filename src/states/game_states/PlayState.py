@@ -65,7 +65,7 @@ class PlayState(BaseState , DrawableMixin):
             self.battlefield.food -= 100
             definition = Entitys.LABOURERS["Man"].copy()
             
-            spawn_x = 10
+            spawn_x = 200
             spawn_y = 863
             birth_way = self.battlefield.find_path((spawn_x, spawn_y), target_pos)
             
