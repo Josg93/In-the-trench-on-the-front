@@ -69,4 +69,5 @@ SOUNDS ={
 	"menu_theme" : pygame.mixer.music.load(BASE_DIR / "assets" / "sounds" / "menu_theme.mp3"),
     "shoot1": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "communist_shoot.mp3"),
     "shoot2": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "good_man_shoot.mp3"),
+    "harvesting": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "harvesting.wav"),
 }

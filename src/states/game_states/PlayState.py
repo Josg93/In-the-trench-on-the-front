@@ -23,10 +23,12 @@ class PlayState(BaseState , DrawableMixin):
         )
         self.battlefield = GameBattlefield(level, self.camera)
         # Temporizadores para las oleadas de enemigos tras 30 segundos
-        self.game_timer = 0.0
-        self.enemy_spawn_timer = 0.0
-        self.enemies_started = False
-    
+        self.wave = 1
+        Timer.every(30 * self.wave, lambda : self.spawn_enemy_wave(self.wave))
+        
+
+        
+        
     def mouse_to_virtual(self, mouse_x : float , mouse_y : float ):
         virtual_mouse_x = mouse_x * (settings.VIRTUAL_WIDTH / settings.WINDOW_WIDTH)
         virtual_mouse_y = mouse_y * (settings.VIRTUAL_HEIGHT / settings.WINDOW_HEIGHT)
@@ -107,20 +109,20 @@ class PlayState(BaseState , DrawableMixin):
             )
             self.battlefield.entitys.append(new_soldier)
 
-    def spawn_enemy_wave(self,) -> None:
+    def spawn_enemy_wave(self , wave : int) -> None:
         """
         Genera una oleada de soldados enemigos desde el extremo derecho del mapa
         con el objetivo de avanzar hacia el borde izquierdo (x = 0).
         """
         
         definition = Entitys.SOLDIERS["Soldier_enemy"].copy()
-        target_y = random.randint(655,1100)
-        spawn_x = 15500
-        spawn_y = target_y
-        left_edge = (0, spawn_y)
+        
+        for i in range(40 * wave):  # Spawnea 3 enemigos por oleada
+            target_y = random.randint(655,1100)
+            spawn_x = 15500
+            spawn_y = target_y
+            left_edge = (0, spawn_y)
 
-        for i in range(10):  # Spawnea 3 enemigos por oleada
-            
             birth_way = self.battlefield.find_path((spawn_x, spawn_y), left_edge)
             enemy_soldier = Soldier(
                 x=spawn_x,
@@ -134,14 +136,14 @@ class PlayState(BaseState , DrawableMixin):
                 **definition
             )
             self.battlefield.entitys.append(enemy_soldier)
-        
+        wave += 1
     def update(self, dt: float) -> None:
         self.battlefield.update(dt)
         self.scroll(dt)
 
         # ----------------- Temporizador y Oleadas de Enemigos (30 segundos) -----------------
-        wave = 1
-        Timer.every(10.0, lambda : self.spawn_enemy_wave(), limit=5)
+       
+        
         
         # ----------------- Gestión de objetivos de los enemigos ----------------------------
         # Los enemigos priorizan atacar a entidades amigas en rango; si no hay, avanzan hacia el borde izquierdo.

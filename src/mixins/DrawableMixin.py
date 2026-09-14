@@ -17,8 +17,10 @@ import settings
 
 class DrawableMixin:
     def render(self, surface: pygame.Surface, camera: Any) -> None:
-        texture = settings.TEXTURES[self.texture_id]
-        frame = settings.FRAMES[self.texture_id][self.frame_index]
+        current_anim = getattr(self, "current_animation", None)
+        texture_key = getattr(current_anim, "texture_id", getattr(self, "texture_id", "entitys"))
+        texture = settings.TEXTURES[texture_key]
+        frame = settings.FRAMES[texture_key][self.frame_index]
         image = pygame.Surface((frame.width, frame.height), pygame.SRCALPHA)
         image.fill((0, 0, 0, 0))
         image.blit(texture, (0, 0), frame)

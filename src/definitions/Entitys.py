@@ -86,9 +86,9 @@ SOLDIERS = {
                 "interval": 0.3,
             },
             "shoot": {
-                "texture_id": "shooting",
                 "frames": [0,1,2],
                 "interval": 0.3,
+                "texture_id": "shooting",
             },
         }
     },
@@ -117,9 +117,9 @@ SOLDIERS = {
                 "interval": 0.3,
             },
             "shoot": {
-                "texture_id": "shooting",
                 "frames": [9,10,11],
                 "interval": 0.3,
+                "texture_id": "shooting",
             },
         }
     }

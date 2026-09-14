@@ -21,6 +21,7 @@ class AnimatedMixin:
                 values.get("interval", 0),  # Given interval or zero
                 loops=values.get("loops"),  # Given loops or None
             )
+            animation.texture_id = values.get("texture_id", getattr(self, "texture_id", "entitys"))
             self.animations[animation_id] = animation
 
     def change_animation(self, animation_id: str) -> None:

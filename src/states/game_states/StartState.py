@@ -7,8 +7,8 @@ import settings
 
 class StartState(BaseState):
     def enter(self):
-        pygame.mixer.music.play(loops=-1)
-
+        #pygame.mixer.music.play(loops=-1)
+        pass
     def render(self, surface : pygame.Surface):
         surface.blit(settings.TEXTURES["background"],(0 , 0) )
         #self.title.render(surface)

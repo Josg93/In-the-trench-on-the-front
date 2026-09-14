@@ -498,6 +498,18 @@
                  "width":64,
                  "x":13,
                  "y":996.333333333333
+                }, 
+                {
+                 "height":96,
+                 "id":57,
+                 "name":"",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"Soldier_enemy",
+                 "visible":true,
+                 "width":64,
+                 "x":3468,
+                 "y":843.333333333333
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -624,7 +636,7 @@
          "y":0
         }],
  "nextlayerid":18,
- "nextobjectid":57,
+ "nextobjectid":59,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

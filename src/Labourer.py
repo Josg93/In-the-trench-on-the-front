@@ -4,6 +4,8 @@ from pygame import Surface
 from src.GameEntity import GameEntity 
 from gale.timer import Timer
 
+import settings 
+
 class Labourer(GameEntity):
     def __init__(self,
                  x: float,
@@ -29,12 +31,15 @@ class Labourer(GameEntity):
         if not self.is_working:
             self.is_working = True
             self.work_timer = Timer.every(1, lambda: setattr(self.battlefield, 'food', self.battlefield.food + 10))
+            #self.harvesting_sound = Timer.every(10, lambda: settings.SOUNDS["harvesting"].play())
+           
             self.state_machine.change("work")
 
     def stop_working(self):
         if self.is_working:
             self.is_working = False
             if hasattr(self, "work_timer") and self.work_timer:
+                #self.harvesting_sound
                 self.work_timer.remove()
                 self.work_timer = None
             self.assigned_building = None
