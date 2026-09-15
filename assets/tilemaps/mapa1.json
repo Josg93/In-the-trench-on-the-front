@@ -358,8 +358,8 @@
                  "type":"Man",
                  "visible":true,
                  "width":64,
-                 "x":458.696969696969,
-                 "y":679.09090909091
+                 "x":280.030303030302,
+                 "y":715.09090909091
                 }, 
                 {
                  "height":96,
@@ -376,8 +376,8 @@
                  "type":"Woman",
                  "visible":true,
                  "width":64,
-                 "x":433.090909090909,
-                 "y":842.424242424242
+                 "x":275.757575757576,
+                 "y":835.757575757575
                 }, 
                 {
                  "height":96,
@@ -394,8 +394,20 @@
                  "type":"Man",
                  "visible":true,
                  "width":64,
-                 "x":455.30303030303,
-                 "y":1014.87878787879
+                 "x":273.969696969697,
+                 "y":950.87878787879
+                }, 
+                {
+                 "height":0,
+                 "id":64,
+                 "name":"",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"Soldier_enemy",
+                 "visible":true,
+                 "width":0,
+                 "x":3533.33333333333,
+                 "y":768
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -546,7 +558,7 @@
          "y":0
         }],
  "nextlayerid":20,
- "nextobjectid":61,
+ "nextobjectid":65,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

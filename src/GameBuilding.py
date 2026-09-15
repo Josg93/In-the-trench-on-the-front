@@ -16,12 +16,15 @@ class GameBuilding(mixins.DrawableMixin, mixins.CollidableMixin):
         height: float,
         texture_id: str,
         frame_index: int,
+        hp: int ,
+        max_hp : int,
         collidable: bool = True,
         solid: bool = False,
         collision_offset_x: float = 0,
         collision_offset_y: float = 0,
         collision_width: float = None,
         collision_height: float = None,
+        is_enemy: bool = False,
     ) -> None:
         self.type = type
         self.x = x
@@ -30,6 +33,8 @@ class GameBuilding(mixins.DrawableMixin, mixins.CollidableMixin):
         self.height = height
         self.texture_id = texture_id
         self.frame_index = frame_index
+        self.hp = hp
+        self.max_hp = max_hp 
         self.flipped = False
         self.collidable = collidable
         self.active = True
@@ -39,6 +44,7 @@ class GameBuilding(mixins.DrawableMixin, mixins.CollidableMixin):
         self.collision_width = collision_width if collision_width is not None else width
         self.collision_height = collision_height if collision_height is not None else height
         self.highlight_timer = 0
+        self.is_enemy = is_enemy
 
     def highlight(self):
         self.highlight_timer = 1.0
@@ -52,7 +58,7 @@ class GameBuilding(mixins.DrawableMixin, mixins.CollidableMixin):
         Retorna el rectángulo de colisión ajustado con los offsets de colisión parcial.
         """
         return pygame.Rect(
-            round(self.x + self.collision_offset_x),
+            round(self.x + self.collision_offset_x),  
             round(self.y + self.collision_offset_y),
             self.collision_width,
             self.collision_height,
@@ -64,3 +70,15 @@ class GameBuilding(mixins.DrawableMixin, mixins.CollidableMixin):
             rect = self.get_collision_rect()
             applied_rect = camera.apply(rect)
             pygame.draw.rect(surface, (255, 255, 0), applied_rect, 3)
+
+        if hasattr(self, "hp") and hasattr(self, "max_hp") and self.hp < self.max_hp:
+            bar_width = self.width
+            bar_height = 6
+            bar_x = self.x
+            bar_y = self.y - 10
+            dest = camera.apply(pygame.Rect(bar_x, bar_y, bar_width, bar_height))
+            pygame.draw.rect(surface, (200, 0, 0), dest)
+            current_width = max(0, int(bar_width * (self.hp / self.max_hp)))
+            current_rect = pygame.Rect(dest.x, dest.y, current_width, bar_height)
+            pygame.draw.rect(surface, (0, 200, 0), current_rect)
+            pygame.draw.rect(surface, (255, 255, 255), dest, 1)

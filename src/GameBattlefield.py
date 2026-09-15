@@ -13,6 +13,7 @@ from src.GameEntity import GameEntity
 from src.Labourer import Labourer
 from src.Soldier import Soldier
 from src.GameBuilding import GameBuilding
+import random
 
 import settings
 
@@ -38,10 +39,13 @@ class GameBattlefield():
         for obj in self.tilemap.object_layers.get("collission", []):
             self.collision_rects.append(pygame.Rect(obj.x, obj.y, obj.width, obj.height))
 
-        self.build_graph()
-
+        
         for obj in self.tilemap.object_layers.get("buildings", []):
             self.add_building(obj)
+            
+
+        self.build_graph()
+
 
         for obj in self.tilemap.object_layers.get("entitys", []):
             self.add_entity(obj)
@@ -132,7 +136,8 @@ class GameBattlefield():
         definition = None
         if entity_type in Entitys.LABOURERS:
             definition = Entitys.LABOURERS[entity_type].copy()
-            birth_way = self.find_path((obj.x, obj.y), (417, 862))
+            target_y = random.randint(655,1171)
+            birth_way = self.find_path((obj.x, obj.y), (417, target_y))
             self.entitys.append(
                 Labourer(
                     obj.x,
@@ -190,13 +195,9 @@ class GameBattlefield():
         else:
             definition = Buildings.CIVIL_BUILDINGS["mill"].copy()
 
-        width = obj.width if obj.width > 0 else definition.pop("width")
-        height = obj.height if obj.height > 0 else definition.pop("height")
-        if "width" in definition:
-            definition.pop("width")
-        if "height" in definition:
-            definition.pop("height")
-
+        width = definition.pop("width")
+        height = definition.pop("height")
+        
         self.buildings.append(
             GameBuilding(
                 obj.type,
@@ -207,6 +208,9 @@ class GameBattlefield():
                 **definition
             )
         )
+        if obj.type == "town" :
+            self.capitol = self.buildings[-1]  
+        
     def mouse_to_virtual(self, mouse_x : float , mouse_y : float ):
         virtual_mouse_x = mouse_x * (settings.VIRTUAL_WIDTH / settings.WINDOW_WIDTH)
         virtual_mouse_y = mouse_y * (settings.VIRTUAL_HEIGHT / settings.WINDOW_HEIGHT)
@@ -220,7 +224,8 @@ class GameBattlefield():
         for entity in self.entitys:
             entity.update(dt)
        
-        self.entitys = [e for e in self.entitys if getattr(e, "hp", 100) > 0]    
+        self.entitys = [e for e in self.entitys if getattr(e, "hp", 100) > 0]
+        self.buildings = [e for e in self.buildings if getattr(e, "hp", 100) > 0]        
 
 
     def find_path(self, start_pos: tuple, goal_pos: tuple) -> list:

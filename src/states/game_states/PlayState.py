@@ -23,6 +23,8 @@ class PlayState(BaseState , DrawableMixin):
         )
         self.battlefield = GameBattlefield(level, self.camera)
         # Temporizadores para las oleadas de enemigos tras 30 segundos
+        
+        
         self.wave = 1
         Timer.every(30 * self.wave, lambda : self.spawn_enemy_wave(self.wave))
         
@@ -84,15 +86,15 @@ class PlayState(BaseState , DrawableMixin):
             
         elif self.battlefield.food >= 200 and type == "soldier":
             self.battlefield.food -= 200
-            target_y = random.randint(655,1171)
+            target_y = random.randint(655,1000)
             target_pos = (3532,target_y)
             definition = Entitys.SOLDIERS["Soldier"].copy()
             
-            spawn_x = 200
-            spawn_y = 1200
             for building in self.battlefield.buildings:
                 if building.type == "barracks":
-                    spawn_x, spawn_y = (building.x + building.width // 2, building.y + building.height)
+                    spawn_x, spawn_y = (building.x + building.get_collision_rect().width // 2 ,
+                                        (building.y + building.get_collision_rect().height) + 120) 
+           
             
             birth_way = self.battlefield.find_path((spawn_x, spawn_y), target_pos)
             
@@ -140,6 +142,10 @@ class PlayState(BaseState , DrawableMixin):
     def update(self, dt: float) -> None:
         self.battlefield.update(dt)
         self.scroll(dt)
+        
+        if self.battlefield.capitol.hp <= 0:
+            self.state_machine.change("defeat")
+        
 
         # ----------------- Temporizador y Oleadas de Enemigos (30 segundos) -----------------
        

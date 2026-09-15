@@ -54,8 +54,16 @@ class Soldier(GameEntity):
                     if dist < min_dist:
                         min_dist = dist
                         closest_enemy = entity
-
+                        
+            for building in self.battlefield.buildings:
+                if building != self and getattr(building, "is_enemy", False) != self.is_enemy:
+                    dist = ((building.x - self.x) ** 2 + (building.y - self.y) ** 2) ** 0.5
+                    if dist < min_dist:
+                        min_dist = dist
+                        closest_enemy = building
             # Si hay un enemigo en rango, detener el movimiento para enfocar el combate
+          
+          
             if closest_enemy is not None:
                 self.shoot(closest_enemy)
             
@@ -67,13 +75,13 @@ class Soldier(GameEntity):
                 
         if self.attack_timer <= 0:
             # Infligir daño al enemigo y reiniciar el cooldown
+            canal = pygame.mixer.find_channel()
             if self.is_enemy is False:
-                settings.SOUNDS["shoot1"].stop()
-                settings.SOUNDS["shoot1"].play()
-                
+                canal.play(settings.SOUNDS["shoot1"])
+                               
             else:
-                settings.SOUNDS["shoot2"].stop()
-                settings.SOUNDS["shoot2"].play() 
+                canal.play(settings.SOUNDS["shoot2"])
+                
             error = random.randint(0,10)    
             closest_enemy.hp -= self.attack_power + error
             self.attack_timer = self.attack_cooldown

@@ -17,7 +17,9 @@ class inTheTrenchOnTheFront(Game):
             {
                 "start" : game_states.StartState,
                 "menu" : game_states.MenuState,
-                "play" : game_states.PlayState
+                "play" : game_states.PlayState,
+                "defeat" : game_states.DefeatState,
+                "victory" : game_states.VictoryState
             }
         )
         
