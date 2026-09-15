@@ -76,7 +76,7 @@ class PlayState(BaseState , DrawableMixin):
                 height=96,
                 battlefield=self.battlefield,
                 entity_type="Man",
-                waypoints=[target_pos],
+                waypoints=birth_way,
                 target_position=target_pos,
                 **definition
             )
@@ -103,7 +103,7 @@ class PlayState(BaseState , DrawableMixin):
                 height=96,
                 battlefield=self.battlefield,
                 entity_type="Soldier",
-                waypoints=[target_pos],
+                waypoints=birth_way,
                 target_position=target_pos,
                 **definition
             )
@@ -131,7 +131,7 @@ class PlayState(BaseState , DrawableMixin):
                 height=96,
                 battlefield=self.battlefield,
                 entity_type="Soldier_enemy",
-                waypoints=birth_way if birth_way else [left_edge],
+                waypoints=birth_way,
                 target_position=left_edge,
                 **definition
             )
@@ -167,9 +167,6 @@ class PlayState(BaseState , DrawableMixin):
                     waypoints = self.battlefield.find_path((entity.x, entity.y), left_edge)
                     if waypoints:
                         entity.waypoints = waypoints
-                        entity.target_position = left_edge
-                    else:
-                        entity.waypoints = [left_edge]
                         entity.target_position = left_edge
 
         # ----------------- manejar actividades de las entidades --------------------------

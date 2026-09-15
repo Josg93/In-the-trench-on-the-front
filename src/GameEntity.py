@@ -3,7 +3,7 @@ from src import mixins
 from gale.state import StateMachine
 import pygame
 
-class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
+class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMixin):
     def __init__(
         self,
         x: float,
@@ -50,10 +50,16 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
         self.state_machine.change("idle")
 
     def get_collision_rect(self) -> pygame.Rect:
+        # Hitbox de colisión ubicado en los pies de la entidad (ancho 64, alto 32)
+        # Permite superposición visual de los cuerpos pero evita que las unidades se amontonen.
+        return pygame.Rect(round(self.x), round(self.y + 64), self.width, 32)
+
+    def get_selection_rect(self) -> pygame.Rect:
+        # Hitbox completo para la selección mediante clics del usuario en el sprite entero
         return pygame.Rect(round(self.x), round(self.y), self.width, self.height)
 
     def get_work_rect(self) -> pygame.Rect:
-        return pygame.Rect(round(self.x), round(self.y + 64), self.width, 32)
+        return self.get_collision_rect()
         
     def movement(self, dt : float):
         if getattr(self, "is_working", False) and self.waypoints:
@@ -95,70 +101,25 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin):
                 move_x = (dx / distance) * self.speed * dt
                 move_y = (dy / distance) * self.speed * dt
 
-                # Movimiento en eje X con verificación de colisión
-                self.x += move_x
-                if self.battlefield:
-                    entity_rect = self.get_work_rect()
-                    collided = False
-                    building_collided = False
-                    for building in self.battlefield.buildings:
-                        if building.solid and building.collidable:
-                            if entity_rect.colliderect(building.get_collision_rect()):
-                                collided = True
-                                building_collided = True
-                                break
+                # Sistema de Separación (Flocking): calcular fuerza de repulsión entre entidades cercanas
+                separation_x = 0
+                separation_y = 0
+                separation_radius = 35.0
+                if self.battlefield and hasattr(self.battlefield, "entitys"):
+                    for other in self.battlefield.entitys:
+                        if other != self:
+                            ox = self.x - other.x
+                            oy = self.y - other.y
+                            dist_other = (ox ** 2 + oy ** 2) ** 0.5
+                            if 0 < dist_other < separation_radius:
+                                force = (separation_radius - dist_other) / separation_radius
+                                separation_x += (ox / dist_other) * force * 40.0 * dt
+                                separation_y += (oy / dist_other) * force * 40.0 * dt
 
-                    for entity in self.battlefield.entitys:
-                        if entity != self and entity_rect.colliderect(entity.get_work_rect()):
-                            collided = True
-                            break
-                            
-                    if not collided and hasattr(self.battlefield, "collision_rects"):
-                        for rect in self.battlefield.collision_rects:
-                            if entity_rect.colliderect(rect):
-                                collided = True
-                                building_collided = True
-                                break
-
-                    if collided:
-                        self.x -= move_x
-                        if building_collided:
-                            self.waypoints = []
-                            self.target_position = None
-                            self.state_machine.change("idle")
-
-                # Movimiento en eje Y con verificación de colisión
-                self.y += move_y
-                if self.battlefield:
-                    entity_rect = self.get_work_rect()
-                    collided = False
-                    building_collided = False
-                    for building in self.battlefield.buildings:
-                        if building.solid and building.collidable:
-                            if entity_rect.colliderect(building.get_collision_rect()):
-                                collided = True
-                                building_collided = True
-                                break
-
-                    for entity in self.battlefield.entitys:
-                        if entity != self and entity_rect.colliderect(entity.get_work_rect()):
-                            collided = True
-                            break
-                            
-                    if not collided and hasattr(self.battlefield, "collision_rects"):
-                        for rect in self.battlefield.collision_rects:
-                            if entity_rect.colliderect(rect):
-                                collided = True
-                                building_collided = True
-                                break
-
-                    if collided:
-                        self.y -= move_y
-                        if building_collided:
-                            self.waypoints = []
-                            self.target_position = None
-                            self.state_machine.change("idle")
-
+                # Movimiento en eje X con verificación de colisión y separación
+                self.x += move_x + separation_x
+                 # Movimiento en eje Y con verificación de colisión y separación
+                self.y += move_y + separation_y
                 from src import states
                 current_state = self.state_machine.current
                 if self.waypoints and (not isinstance(current_state, states.entity_states.WalkState) or getattr(current_state, "direction", None) != direction):

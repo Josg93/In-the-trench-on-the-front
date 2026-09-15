@@ -5,6 +5,8 @@ import pygame
 from gale.tilemap import load_tiled_map
 from gale.camera import Camera
 from gale.timer import Timer
+from gale.ai.graph import Graph
+from gale.ai.search import a_star
 
 from src.definitions import Entitys, Buildings
 from src.GameEntity import GameEntity
@@ -14,11 +16,13 @@ from src.GameBuilding import GameBuilding
 
 import settings
 
+
 class GameBattlefield():
     """
     Gestiona el campo de batalla, el mapa, los edificios, las entidades,
     la cámara y los recursos de comida (extracción de 10 de comida cada 10 segundos).
     """
+
     def __init__(self, map : Any = 1, camera : Camera = None) -> None:
         self.tilemap = load_tiled_map(settings.TILEMAPS[map])
         self.buildings = []
@@ -29,11 +33,12 @@ class GameBattlefield():
         self.food = 300
         
         
-        
         self.camera = camera
         self.collision_rects = []
         for obj in self.tilemap.object_layers.get("collission", []):
             self.collision_rects.append(pygame.Rect(obj.x, obj.y, obj.width, obj.height))
+
+        self.build_graph()
 
         for obj in self.tilemap.object_layers.get("buildings", []):
             self.add_building(obj)
@@ -42,8 +47,86 @@ class GameBattlefield():
             self.add_entity(obj)
 
         
+    
+    # === Construcción del Grafo de Navegación para la capa ground ===
+    def build_graph(self) -> None:
+        # Dimensiones de la capa ground (píxeles): x en [0, 16000], y en [608, 1184]
+        # Tamaño de tile: 32x32 (deducido de la configuración y el código existente)
+        TILE_W = self.tilemap.tile_width
+        TILE_H = self.tilemap.tile_height
+        GROUND_X0, GROUND_Y0 = 0, 608
+        GROUND_X1, GROUND_Y1 = 16000, 1184
+
+
+
+        # Índices de celda (row, col) que delimitan la capa ground:
+        # - Fila (row): py / 32. 608 / 32 = 19, 1184 / 32 = 37  -> rows 19 .. 36 (18 filas)
+        # - Columna (col): px / 32. 0 / 32 = 0, 16000 / 32 = 500 -> cols 0 .. 499 (500 columnas)
+        self.ground_start_row = GROUND_Y0 // TILE_H      # 19
+        self.ground_end_row   = GROUND_Y1 // TILE_H      # 37 (exclusive)
+        self.ground_start_col = 0
+        self.ground_end_col   = GROUND_X1 // TILE_W      # 500 (exclusive)
+
+        # Instanciamos el grafo de navegación de Gale (estructura _adjacency: Dict[T, Dict[T, float]])
+        self.nav_graph = Graph()
+
+        # Función auxiliar: devuelve el rectángulo del tile en píxeles dada su fila y columna
+        def tile_rect(r: int, c: int) -> pygame.Rect:
+            tx, ty = self.tilemap.position_of(r, c)
+            return pygame.Rect(tx, ty, TILE_W, TILE_H)
+
+        #Poblamos el grafo: añadimos nodos solo para tiles válidos (no bloqueados por colisiones)
+        for r in range(self.ground_start_row, self.ground_end_row):
+            for c in range(self.ground_start_col, self.ground_end_col):
+                tr = tile_rect(r, c)
+                blocked = False
+                # Colisionar con rectángulos de la capa "collission" (obstáculos estáticos)
+                for rect in self.collision_rects:
+                    if tr.colliderect(rect):
+                        blocked = True
+                        break
+                # Colisionar con edificios sólidos (si tienen collidable=True y rect de colisión)
+                if not blocked:
+                    for building in self.buildings:
+                        if getattr(building, "collidable", False):
+                            br = building.get_collision_rect()
+                            if tr.colliderect(br):
+                                blocked = True
+                                break
+                # Si el tile no está bloqueado, lo añadimos como nodo aislado en el grafo
+                if not blocked:
+                    self.nav_graph._adjacency[(r, c)] = {}
+
+        # Conectamos nodos con vecinos en 8 direcciones (ortogonales y diagonales)
+        # Pesos: 1.0 para movimiento horizontal/vertical, 1.414 ≈ sqrt(2) para diagonal
+        WEIGHT_ORTH = 1.0
+        WEIGHT_DIAG = 1.414
         
-  
+        for r in range(self.ground_start_row, self.ground_end_row):
+            for c in range(self.ground_start_col, self.ground_end_col):
+                node = (r, c)
+                if node not in self.nav_graph._adjacency:
+                    continue  # nodo bloqueado, saltar
+                # Explorar los 8 vecinos posibles
+                for dr, dc, w in [
+                    (-1, 0, WEIGHT_ORTH), (1, 0, WEIGHT_ORTH),
+                    (0, -1, WEIGHT_ORTH), (0, 1, WEIGHT_ORTH),
+                    (-1, -1, WEIGHT_DIAG), (-1, 1, WEIGHT_DIAG),
+                    (1, -1, WEIGHT_DIAG), (1, 1, WEIGHT_DIAG)
+                ]:
+                    nr, nc = r + dr, c + dc
+                    # Verificar que el vecino esté dentro de los límites de la capa ground
+                    if self.ground_start_row <= nr < self.ground_end_row and self.ground_start_col <= nc < self.ground_end_col:
+                        neighbor = (nr, nc)
+                        if neighbor in self.nav_graph._adjacency:
+                            # Añadimos la arista en ambos sentidos (grafo efectivamente no dirigido para el movimiento)
+                            self.nav_graph._adjacency[node][neighbor] = w
+                            self.nav_graph._adjacency[neighbor][node] = w
+
+        # === Fin construcción grafo ===
+        
+
+
     def add_entity(self, obj: Any) -> None:
         entity_type = obj.type if obj.type else "Man"
         definition = None
@@ -96,7 +179,6 @@ class GameBattlefield():
                 )
             )
 
-        
 
     def add_building(self, obj: Any) -> None:
         b_type = obj.type if obj.type else "mill"
@@ -140,56 +222,59 @@ class GameBattlefield():
        
         self.entitys = [e for e in self.entitys if getattr(e, "hp", 100) > 0]    
 
-    def find_path(self, start_pos: tuple, goal_pos: tuple) -> list:
-        from gale.ai.search import a_star
 
+    def find_path(self, start_pos: tuple, goal_pos: tuple) -> list:
+        """
+        Busca el camino más corto entre start_pos y goal_pos usando A* sobre el grafo de navegación
+        preconstruido para la capa ground. Devuelve una lista de waypoints en coordenadas de píxel
+        (centros de los tiles) que la entidad debe seguir.
+        
+        El grafo está restringido a la capa ground (rows 19..36, cols 0..499) y los nodos bloqueados
+        por colisiones o edificios han sido eliminados previamente.
+        """
+        # Convertir posiciones de mundo a coordenadas de tile (fila, columna)
         start_r, start_c = self.tilemap.tile_at(start_pos[0], start_pos[1])
         goal_r, goal_c = self.tilemap.tile_at(goal_pos[0], goal_pos[1])
 
-        if not self.tilemap.in_bounds(start_r, start_c) or not self.tilemap.in_bounds(goal_r, goal_c):
+        # 1. Verificar que tanto el inicio como el objetivo estén dentro de los límites
+        #    de la capa ground (usamos los atributos instalados en __init__)
+        if not (self.ground_start_row <= start_r < self.ground_end_row and self.ground_start_col <= start_c < self.ground_end_col):
+            return []
+        if not (self.ground_start_row <= goal_r < self.ground_end_row and self.ground_start_col <= goal_c < self.ground_end_col):
             return []
 
-        def is_walkable(r, c):
-            if not self.tilemap.in_bounds(r, c):
-                return False
-            
-            # Verificar colisión con objetos de la capa 'collission'
-            tx, ty = self.tilemap.position_of(r, c)
-            tile_rect = pygame.Rect(tx, ty, self.tilemap.tile_width, self.tilemap.tile_height)
-            for rect in self.collision_rects:
-                if tile_rect.colliderect(rect):
-                    return False
-
-            
-
-        def neighbors_fn(node):
-            r, c = node
-            neighbors = []
-            directions = [
-                (-1, 0, 1.0), (1, 0, 1.0), (0, -1, 1.0), (0, 1, 1.0),
-                (-1, -1, 1.414), (-1, 1, 1.414), (1, -1, 1.414), (1, 1, 1.414)
-            ]
-            for dr, dc, weight in directions:
-                nr, nc = r + dr, c + dc
-                if is_walkable(nr, nc):
-                    neighbors.append(((nr, nc), weight))
-            return neighbors
-
-        def heuristic(n1, n2):
-            return ((n1[0] - n2[0]) ** 2 + (n1[1] - n2[1]) ** 2) ** 0.5
-
-        if not is_walkable(goal_r, goal_c):
+        # 2. Verificar que ambos nodos existan en el grafo (no estén bloqueados por obstáculos)
+        if (start_r, start_c) not in self.nav_graph._adjacency:
+            return []
+        if (goal_r, goal_c) not in self.nav_graph._adjacency:
             return []
 
-        tile_path = a_star((start_r, start_c), (goal_r, goal_c), neighbors_fn, heuristic)
+        # 3. Ejecutar A* usando el grafo de Gale
+        #    a_star(start, goal, graph_or_fn, heuristic) acepta un objeto Graph y una función heurística
+        tile_path = a_star((start_r, start_c), (goal_r, goal_c), self.nav_graph, self._heuristic)
+        
         if not tile_path:
             return []
 
+        # 4. Convertir la ruta de nodos (fila, columna) a waypoints en píxeles
+        #    (centro de cada tile) para entregárselos a la entidad
         waypoints = []
+        tw = self.tilemap.tile_width
+        th = self.tilemap.tile_height
         for r, c in tile_path:
             tx, ty = self.tilemap.position_of(r, c)
-            waypoints.append((tx + self.tilemap.tile_width / 2, ty + self.tilemap.tile_height / 2))
+            # Centro del tile: sumamos la mitad del ancho/alto
+            waypoints.append((tx + tw / 2, ty + th / 2))
         return waypoints
+
+    def _heuristic(self, n1: tuple, n2: tuple) -> float:
+        """
+        Heurística euclidiana entre dos nodos (fila, columna).
+        Usa la fórmula sqrt((r1-r2)^2 + (c1-c2)^2).
+        """
+        r1, c1 = n1
+        r2, c2 = n2
+        return ((r1 - r2) ** 2 + (c1 - c2) ** 2) ** 0.5
 
     def on_input(self, input_id: str, input_data: Any) -> None:
         if hasattr(input_data, "pressed") and input_data.pressed:
@@ -201,7 +286,7 @@ class GameBattlefield():
             if input_id == "select_entity":
                 clicked_entity = None
                 for entity in self.entitys:
-                    rect = entity.get_collision_rect()
+                    rect = entity.get_selection_rect() if hasattr(entity, "get_selection_rect") else entity.get_collision_rect()
                     if rect.collidepoint(world_x, world_y) and entity.is_enemy is False :
                         clicked_entity = entity
                         break
@@ -210,20 +295,33 @@ class GameBattlefield():
                     entity.selected = (entity == clicked_entity)
                 self.selected_entity = clicked_entity
 
-
+            
             elif input_id == "move_entity":
                 if self.selected_entity is not None:
                     if hasattr(self.selected_entity, "stop_working"):
                         self.selected_entity.stop_working()
-
+                    
+                    #seleccionar edificio si coincide el click en una bulding
                     clicked_building = None
                     if getattr(self.selected_entity, "entity_type") in ["Man", "Woman"]:
                         for building in self.buildings:
                             if building.get_collision_rect().collidepoint(world_x, world_y):
                                 clicked_building = building
                                 break
-
-                    if clicked_building is not None:
+                    
+                    # Moverse normal
+                    if clicked_building is None:             
+                        entity_center = (self.selected_entity.x, self.selected_entity.y)
+                        waypoints = self.find_path(entity_center, (world_x, world_y))
+                        if waypoints:
+                            self.selected_entity.waypoints = waypoints
+                            self.selected_entity.target_position = (world_x, world_y)
+                        #else:
+                        #    self.selected_entity.waypoints = [(world_x, world_y)]
+                        #    self.selected_entity.target_position = (world_x, world_y)
+                        
+                    # Moverse hacia building                                 
+                    elif clicked_building is not None:
                         self.selected_entity.assigned_building = clicked_building
                         clicked_building.highlight()
                         b_rect = clicked_building.get_collision_rect()
@@ -233,18 +331,10 @@ class GameBattlefield():
                         if waypoints:
                             self.selected_entity.waypoints = waypoints
                             self.selected_entity.target_position = (target_x, target_y)
-                        else:
-                            self.selected_entity.waypoints = [(target_x, target_y)]
-                            self.selected_entity.target_position = (target_x, target_y)
-                    else:
-                        entity_center = (self.selected_entity.x, self.selected_entity.y)
-                        waypoints = self.find_path(entity_center, (world_x, world_y))
-                        if waypoints:
-                            self.selected_entity.waypoints = waypoints
-                            self.selected_entity.target_position = (world_x, world_y)
-                        else:
-                            self.selected_entity.waypoints = [(world_x, world_y)]
-                            self.selected_entity.target_position = (world_x, world_y)
+                        #else:
+                        #    self.selected_entity.waypoints = [(target_x, target_y)]
+                        #    self.selected_entity.target_position = (target_x, target_y)
+
 
     def render(self, surface: pygame.Surface) -> None:
         self.tilemap.render(surface, self.camera)
@@ -252,4 +342,3 @@ class GameBattlefield():
             building.render(surface, self.camera)
         for entity in self.entitys:
             entity.render(surface, self.camera)
-        
