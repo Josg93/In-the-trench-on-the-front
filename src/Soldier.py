@@ -128,8 +128,6 @@ class Soldier(GameEntity):
             closest_enemy = None
             min_dist = self.attack_range
 
-           
-            
             # Search for closest target (either enemy, building in path, or capital)
             for entity in self.battlefield.entitys:
                 if entity != self and getattr(entity, "is_enemy", False) != self.is_enemy:
@@ -137,12 +135,12 @@ class Soldier(GameEntity):
                     if dist < min_dist:
                         min_dist = dist
                         closest_enemy = entity
-            for building in self.battlefield.entitys:
-                   if building != self and getattr(building, "is_enemy", False) != self.is_enemy:
+            for building in self.battlefield.buildings:
+                if building != self and getattr(building, "is_enemy", False) != self.is_enemy:
                     dist = ((building.x - self.x) ** 2 + (building.y - self.y) ** 2) ** 0.5
-                   if dist < min_dist:
-                       min_dist = dist
-                       closest_enemy = building
+                if dist < min_dist:
+                    min_dist = dist
+                    closest_enemy = building
             
 
             if closest_enemy is not None:

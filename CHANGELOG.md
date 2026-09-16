@@ -9,6 +9,7 @@
 - **Post-Combat Re-tasking:** Enemy soldiers automatically resume marching toward the map objective (`x = 0`) after eliminating their opponents.
 - **Accurate Post-Combat State Restoration:** Soldiers now preserve their exact pre-combat activity state (`idle` or `walk`), returning cleanly to idle when stationary or resuming walking with their waypoints intact once their target is defeated.
 - **Advanced Movement Throttling & Debouncing:** Implemented delta-time accumulation timers (`direction_timer`) and state-change debouncing (0.15s interval) in `GameEntity.movement()` to eliminate unit jitter, convulsive direction switching, and animation frame resetting at 60 FPS.
+- **Unit-to-Unit Collision & Separation System:** Implemented circular radius-based collision detection and push-apart resolution between entities (`GameEntity._resolve_unit_collisions()`) to prevent units from solapamiento (overlapping) or stacking on top of each other.
 - **Optimized Waypoint Arrival Threshold:** Increased arrival threshold to 10.0px to prevent floating-point oscillation near target destinations.
 
 ### Fixed

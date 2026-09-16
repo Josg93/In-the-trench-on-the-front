@@ -38,6 +38,7 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
         self.hp = 50
         self.max_hp = 50
         self.is_enemy = False
+        self.collision_radius = max(self.width, self.height) / 3  # Radio de colisión circular proporcional para evitar solapamiento
         self.generate_animations(animations)
 
         from src import states
@@ -144,6 +145,9 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
                 self.x += move_x
                 self.y += move_y
 
+                # Resolver colisiones entre unidades para evitar solapamientos y amontonamientos
+                self._resolve_unit_collisions()
+
                 # Debouncing y control de frecuencia: solo actualiza la dirección de la máquina de estados 
                 # si la nueva dirección difiere tras un intervalo de tiempo (0.15s), eliminando parpadeos y tirones visuales.
                 if candidate_direction != current_direction:
@@ -153,8 +157,45 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
                 else:
                     self.direction_timer = 0.0
 
+    def _resolve_unit_collisions(self):
+        """
+        Sistema de colisión física entre unidades circulares.
+        Evita que las unidades se solapen o amontonen, separándolas suavemente
+        en función de sus radios de colisión combinados.
+        """
+        if not self.battlefield or not hasattr(self.battlefield, "entitys"):
+            return
 
+        self_radius = getattr(self, "collision_radius", 24.0)
+        self_center_x = self.x + self.width / 2
+        self_center_y = self.y + self.height / 2
 
+        for other in self.battlefield.entitys:
+            if other == self:
+                continue
+            if not hasattr(other, "collision_radius"):
+                continue
+
+            other_radius = getattr(other, "collision_radius", 24.0)
+            other_center_x = other.x + other.width / 2
+            other_center_y = other.y + other.height / 2
+
+            dx = self_center_x - other_center_x
+            dy = self_center_y - other_center_y
+            distance = (dx ** 2 + dy ** 2) ** 0.5
+
+            combined_radius = self_radius + other_radius
+
+            # Si las unidades colisionan (se solapan), aplicar resolución de empuje
+            if distance < combined_radius and distance > 0:
+                overlap = combined_radius - distance
+                nx = dx / distance
+                ny = dy / distance
+
+                # Repartir el empuje equitativamente (50% cada una)
+                push_factor = 0.5
+                self.x += nx * overlap * push_factor
+                self.y += ny * overlap * push_factor
 
     def update(self, dt: float) -> None:
         self.movement(dt)
