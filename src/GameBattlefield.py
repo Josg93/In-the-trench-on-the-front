@@ -36,7 +36,7 @@ class GameBattlefield():
         self.drag_end = (0, 0)
         
         # atributos de estadisticas de juego:
-        self.food = 3000
+        self.food = 30000
         
         
         self.camera = camera

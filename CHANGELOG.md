@@ -7,6 +7,9 @@
 - **Barracks Requirement:** Implemented a validation check ensuring allied soldiers can only be generated when at least 1 allied `barracks` building exists.
 - **Centralized Combat AI & Target Persistence:** Refactored combat logic into `Soldier.py`, eliminating target oscillation when enemies are at equal distances by making soldiers persist on their chosen target until death.
 - **Post-Combat Re-tasking:** Enemy soldiers automatically resume marching toward the map objective (`x = 0`) after eliminating their opponents.
+- **Accurate Post-Combat State Restoration:** Soldiers now preserve their exact pre-combat activity state (`idle` or `walk`), returning cleanly to idle when stationary or resuming walking with their waypoints intact once their target is defeated.
+- **Advanced Movement Throttling & Debouncing:** Implemented delta-time accumulation timers (`direction_timer`) and state-change debouncing (0.15s interval) in `GameEntity.movement()` to eliminate unit jitter, convulsive direction switching, and animation frame resetting at 60 FPS.
+- **Optimized Waypoint Arrival Threshold:** Increased arrival threshold to 10.0px to prevent floating-point oscillation near target destinations.
 
 ### Fixed
 - Fixed `AttributeError` (`'KeyboardData' object has no attribute 'position'`) when pressing `ENTER` in `PlayState`.

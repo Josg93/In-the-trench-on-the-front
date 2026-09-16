@@ -28,9 +28,9 @@ class Soldier(GameEntity):
                  target_position: tuple = None,  
                  is_enemy: bool = False,
                  hp: int = 100,
-                 attack_power: int = 15,
+                 attack_power: int = 20,
                  attack_range: float = 1000,
-                 attack_cooldown: float = 1.0) -> None:
+                 attack_cooldown: float = 2.0) -> None:
         super().__init__(x, y, width, height, texture_id, animations, speed, battlefield, entity_type, waypoints, target_position)
         self.is_enemy = is_enemy
         self.hp = hp
@@ -58,16 +58,31 @@ class Soldier(GameEntity):
         return dist <= self.attack_range
 
     def _save_previous_state(self) -> None:
-        """Guarda la ruta y posición objetivo actual antes de iniciar el combate."""
+        """Guarda la ruta, posición objetivo y el estado activo previo (idle/walk) antes de iniciar el combate."""
         self.previous_waypoints = list(self.waypoints)
         self.previous_target_position = self.target_position
+        from src import states
+        current_state = self.state_machine.current
+        # Registrar si el soldado estaba caminando o en reposo antes de disparar
+        if isinstance(current_state, states.entity_states.WalkState):
+            self.previous_state_type = "walk"
+            self.previous_direction = getattr(current_state, "direction", "right")
+        else:
+            self.previous_state_type = "idle"
+            self.previous_direction = "right"
 
     def _restore_previous_state(self) -> None:
-        """Restaura la ruta y posición objetivo previa cuando el combate finaliza."""
+        """Restaura la ruta, posición objetivo y el estado anterior (idle o walk) cuando el combate finaliza."""
         self.waypoints = list(self.previous_waypoints)
         self.target_position = self.previous_target_position
         self.previous_waypoints = []
         self.previous_target_position = None
+
+        # Restaurar estado exacto de actividad anterior (si estaba caminando con waypoints o en idle)
+        if getattr(self, "previous_state_type", "idle") == "walk" and self.waypoints:
+            self.state_machine.change("walk", direction=getattr(self, "previous_direction", "right"))
+        else:
+            self.state_machine.change("idle")
 
     def shoot(self, closest_enemy : GameEntity):
         """Detiene el movimiento y ejecuta el ataque/disparo contra el objetivo actual."""
@@ -76,13 +91,15 @@ class Soldier(GameEntity):
                 
         if self.attack_timer <= 0:
             canal = pygame.mixer.find_channel(True)
-            shoot = random.randint(0,1)
+            shoot = random.randint(0,2)
             if shoot == 0:
                 canal.play(settings.SOUNDS["shoot1"])
+            elif shoot == 1:
+                canal.play(settings.SOUNDS["shoot3"]) 
             else:
                 canal.play(settings.SOUNDS["shoot2"])
                 
-            error = random.randint(0,10)    
+            error = random.randint(0,30)    
             closest_enemy.hp -= self.attack_power + error
             self.attack_timer = self.attack_cooldown
     
@@ -105,23 +122,28 @@ class Soldier(GameEntity):
                         if waypoints:
                             self.waypoints = waypoints
                             self.target_position = target_edge
+                            # Asegurar que el soldado enemigo reanude su marcha hacia la izquierda
+                            self.state_machine.change("walk", direction="left")
 
             closest_enemy = None
             min_dist = self.attack_range
 
+           
+            
+            # Search for closest target (either enemy, building in path, or capital)
             for entity in self.battlefield.entitys:
                 if entity != self and getattr(entity, "is_enemy", False) != self.is_enemy:
                     dist = ((entity.x - self.x) ** 2 + (entity.y - self.y) ** 2) ** 0.5
                     if dist < min_dist:
                         min_dist = dist
                         closest_enemy = entity
-
-            for building in self.battlefield.buildings:
-                if building != self and getattr(building, "is_enemy", False) != self.is_enemy:
+            for building in self.battlefield.entitys:
+                   if building != self and getattr(building, "is_enemy", False) != self.is_enemy:
                     dist = ((building.x - self.x) ** 2 + (building.y - self.y) ** 2) ** 0.5
-                    if dist < min_dist:
-                        min_dist = dist
-                        closest_enemy = building
+                   if dist < min_dist:
+                       min_dist = dist
+                       closest_enemy = building
+            
 
             if closest_enemy is not None:
                 self.current_target = closest_enemy
@@ -129,9 +151,22 @@ class Soldier(GameEntity):
 
             if self.current_target is not None:
                 self.shoot(self.current_target)
-    
+        
     def work(self):
         self.trench()
+         
+    def stop_working(self):
+        if self.is_working or self.assigned_building:
+            self.is_working = False
+            if self.assigned_building and hasattr(self.assigned_building, "free_slot"):
+                self.assigned_building.free_slot(self)
+            self.assigned_building = None
+            self.assigned_slot = None
+            self.state_machine.change("idle") 
+    
+    
+    
+    
         
     def trench(self):
         if self.assigned_slot:
@@ -142,8 +177,6 @@ class Soldier(GameEntity):
             self.y = slot_pos[1]
             self.state_machine.change("idle")
             
-
-   
     def un_trench(self, target_pos: tuple):
         if self.assigned_building and getattr(self.assigned_building, "type", None) == "trench":
             target_x, target_y = target_pos
@@ -167,30 +200,7 @@ class Soldier(GameEntity):
                 if waypoints:
                     self.waypoints = waypoints
                     self.target_position = target_pos
-        
-           
 
-    def _finish_exiting_trench(self, target_pos: tuple):
-        if self.assigned_building and hasattr(self.assigned_building, "free_slot"):
-            self.assigned_building.free_slot(self)
-        self.assigned_building = None
-        self.assigned_slot = None
-        self.change_animation("idle")
-
-        if self.battlefield and hasattr(self.battlefield, "find_path"):
-            waypoints = self.battlefield.find_path((self.x, self.y), target_pos)
-            if waypoints:
-                self.waypoints = waypoints
-                self.target_position = target_pos
-
-    def stop_working(self):
-        if self.is_working or self.assigned_building:
-            self.is_working = False
-            if self.assigned_building and hasattr(self.assigned_building, "free_slot"):
-                self.assigned_building.free_slot(self)
-            self.assigned_building = None
-            self.assigned_slot = None
-            self.state_machine.change("idle")
     
     def render(self, surface: Surface, camera: Any) -> None:
         super().render(surface, camera)

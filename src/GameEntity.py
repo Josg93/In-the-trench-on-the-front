@@ -79,7 +79,7 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
                 self.stop_working()
 
         if self.waypoints:
-            # MEDIR DISTANCIAS 
+            # Medir distancias al waypoint actual
             target_x, target_y = self.waypoints[0]
             entity_center_x = self.x + self.width / 2
             entity_center_y = self.y + self.height / 2
@@ -87,8 +87,9 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
             dy = target_y - entity_center_y
             distance = (dx ** 2 + dy ** 2) ** 0.5
 
-            # LLEGADA A DESTINO si la distancia con el punto es menor a cinco, ha llegado eliminar waypoint
-            if distance < 5.0:
+            # Umbral de llegada optimizado (10.0 px) para prevenir oscilaciones por imprecisión flotante
+            arrival_threshold = 10.0
+            if distance < arrival_threshold:
                 self.waypoints.pop(0)
                 if not self.waypoints:
                     self.target_position = None
@@ -106,39 +107,51 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
                         self.assigned_slot = None
                         self.state_machine.change("idle")
             
-            #CAMINATA A DESTINO si no ha llegado caminar:            
+            # Caminata hacia el destino con control anti-convulsión y debouncing de dirección
             else:
                 from src import states
                 current_state = self.state_machine.current
                 current_direction = getattr(current_state, "direction", None) if isinstance(current_state, states.entity_states.WalkState) else None
 
-                # Histéresis con umbral para evitar parpadeos y cambios convulsivos de dirección
-                threshold = 6.0
+                # Inicializar temporizadores de conteo delta para evitar cambios de dirección convulsivos a 60 FPS
+                if not hasattr(self, "direction_timer"):
+                    self.direction_timer = 0.0
+
+                self.direction_timer += dt
+
+                # Histéresis mejorada con umbral para prevenir parpadeos en diagonales
+                threshold = 8.0
                 if current_direction in ["left", "right"]:
                     if abs(dy) > abs(dx) + threshold:
-                        direction = "down" if dy > 0 else "up"
+                        candidate_direction = "down" if dy > 0 else "up"
                     else:
-                        direction = "right" if dx > 0 else "left"
+                        candidate_direction = "right" if dx > 0 else "left"
                 elif current_direction in ["up", "down"]:
                     if abs(dx) > abs(dy) + threshold:
-                        direction = "right" if dx > 0 else "left"
+                        candidate_direction = "right" if dx > 0 else "left"
                     else:
-                        direction = "down" if dy > 0 else "up"
+                        candidate_direction = "down" if dy > 0 else "up"
                 else:
                     if abs(dx) > abs(dy):
-                        direction = "right" if dx > 0 else "left"
+                        candidate_direction = "right" if dx > 0 else "left"
                     else:
-                        direction = "down" if dy > 0 else "up"
+                        candidate_direction = "down" if dy > 0 else "up"
 
+                # Calcular y aplicar desplazamiento fluido
                 move_x = (dx / distance) * self.speed * dt
                 move_y = (dy / distance) * self.speed * dt
 
                 self.x += move_x
                 self.y += move_y
 
-                current_state = self.state_machine.current
-                if not isinstance(current_state, states.entity_states.WalkState) or getattr(current_state, "direction", None) != direction:
-                    self.state_machine.change("walk", direction=direction)
+                # Debouncing y control de frecuencia: solo actualiza la dirección de la máquina de estados 
+                # si la nueva dirección difiere tras un intervalo de tiempo (0.15s), eliminando parpadeos y tirones visuales.
+                if candidate_direction != current_direction:
+                    if self.direction_timer >= 0.15:
+                        self.direction_timer = 0.0
+                        self.state_machine.change("walk", direction=candidate_direction)
+                else:
+                    self.direction_timer = 0.0
 
 
 

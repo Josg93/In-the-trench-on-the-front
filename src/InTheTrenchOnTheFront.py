@@ -20,11 +20,11 @@ class inTheTrenchOnTheFront(Game):
                 "menu" : game_states.MenuState,
                 "play" : game_states.PlayState,
                 "defeat" : game_states.DefeatState,
-                "victory" : game_states.VictoryState
+                "victory" : game_states.VictoryState,
             }
         )
         
-        self.state_machine.change("play")
+        self.state_machine.change("victory")
                
     def update(self , dt :float)->None:
         self.state_machine.update(dt)
