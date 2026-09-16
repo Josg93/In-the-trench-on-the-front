@@ -25,6 +25,7 @@ class GameBuilding(mixins.DrawableMixin, mixins.CollidableMixin):
         collision_width: float = None,
         collision_height: float = None,
         is_enemy: bool = False,
+        work_slots = [],
     ) -> None:
         self.type = type
         self.x = x
@@ -45,6 +46,44 @@ class GameBuilding(mixins.DrawableMixin, mixins.CollidableMixin):
         self.collision_height = collision_height if collision_height is not None else height
         self.highlight_timer = 0
         self.is_enemy = is_enemy
+        self.work_slots = work_slots
+        # Inicializar puestos de trabajo (slots) alrededor del edificio (especialmente para el molino)
+        
+        if self.type == "mill":
+            self.work_slots = [
+                {"pos": (self.x + 24, self.y + 40), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 24, self.y + 64 + 40), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 24, self.y + 96 + 40), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 24, self.y + 128 + 40), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 24, self.y + 160 + 40), "occupied": False, "assigned_entity": None},
+            ]
+            
+        if self.type == "trench":
+            self.work_slots = [
+                {"pos": (self.x + 24, self.y + 40), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 24, self.y + 64 + 40), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 24, self.y + 96 + 40), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 24, self.y + 128 + 40), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 24, self.y + 160 + 40), "occupied": False, "assigned_entity": None},
+            ]    
+
+    def get_available_slot(self, entity: Any) -> dict:
+        self.free_slot(entity)
+        for slot in self.work_slots:
+            if slot["occupied"] is False:
+                slot["occupied"] = True
+                slot["assigned_entity"] = entity
+                return slot
+        return None
+
+    def free_slot(self, entity: Any):
+        """
+        Libera el slot que estaba ocupado por la entidad especificada.
+        """
+        for slot in self.work_slots:
+            if slot["assigned_entity"] == entity:
+                slot["occupied"] = False
+                slot["assigned_entity"] = None
 
     def highlight(self):
         self.highlight_timer = 1.0

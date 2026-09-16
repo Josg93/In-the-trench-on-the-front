@@ -12,6 +12,7 @@ import settings
 
 
 class inTheTrenchOnTheFront(Game):
+    
     def init(self)->None:
         self.state_machine = StateMachine(
             {
@@ -23,7 +24,7 @@ class inTheTrenchOnTheFront(Game):
             }
         )
         
-        self.state_machine.change("start")
+        self.state_machine.change("play")
                
     def update(self , dt :float)->None:
         self.state_machine.update(dt)

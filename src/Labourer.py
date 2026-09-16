@@ -42,7 +42,10 @@ class Labourer(GameEntity):
                 #self.harvesting_sound
                 self.work_timer.remove()
                 self.work_timer = None
+            if self.assigned_building and hasattr(self.assigned_building, "free_slot"):
+                self.assigned_building.free_slot(self)
             self.assigned_building = None
+            self.assigned_slot = None
             self.state_machine.change("idle")
     
     def render(self, surface: Surface, camera: Any) -> None:

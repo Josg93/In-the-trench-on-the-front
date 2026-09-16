@@ -27,6 +27,7 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
         self.battlefield = battlefield
         self.entity_type = entity_type
         self.assigned_building = None
+        self.assigned_slot = None
         self.animations = {}
         self.current_animation = None
         self.frame_index = 0
@@ -67,14 +68,24 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
                 self.stop_working()
 
         if getattr(self, "is_working", False) and self.assigned_building:
-            if not self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect()):
+            valid_working_position = False
+            if getattr(self, "assigned_slot", None):
+                sx, sy = self.assigned_slot["pos"]
+                if ((self.x - sx)**2 + (self.y - sy)**2)**0.5 < 60.0:
+                    valid_working_position = True
+            elif self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect()):
+                valid_working_position = True
+
+            if not valid_working_position:
                 if hasattr(self, "stop_working"):
                     self.stop_working()
 
         if self.waypoints:
             target_x, target_y = self.waypoints[0]
-            dx = target_x - self.x
-            dy = target_y - self.y
+            entity_center_x = self.x + self.width / 2
+            entity_center_y = self.y + self.height / 2
+            dx = target_x - entity_center_x
+            dy = target_y - entity_center_y
             distance = (dx ** 2 + dy ** 2) ** 0.5
 
             # si la distancia con el punto es menor a cinco, ha llegado eliminar waypoint
@@ -83,43 +94,52 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
                 if not self.waypoints:
                     
                     self.target_position = None
-                    if self.assigned_building and self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect()):
+                    if self.assigned_building and getattr(self, "assigned_slot", None):
+                        if hasattr(self, "work"):
+                            self.work()
+                        else:
+                            self.state_machine.change("work")
+                    elif self.assigned_building and self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect()):
                         if hasattr(self, "work"):
                             self.work()
                         else:
                             self.state_machine.change("work")
                     else:
+                        if self.assigned_building and hasattr(self.assigned_building, "free_slot"):
+                            self.assigned_building.free_slot(self)
                         self.assigned_building = None
+                        self.assigned_slot = None
                         self.state_machine.change("idle")
             # si no ha llegado caminar:            
             else:
-                if abs(dx) > abs(dy):
-                    direction = "right" if dx > 0 else "left"
+                from src import states
+                current_state = self.state_machine.current
+                current_direction = getattr(current_state, "direction", None) if isinstance(current_state, states.entity_states.WalkState) else None
+
+                # Histéresis con umbral para evitar parpadeos y cambios convulsivos de dirección
+                threshold = 6.0
+                if current_direction in ["left", "right"]:
+                    if abs(dy) > abs(dx) + threshold:
+                        direction = "down" if dy > 0 else "up"
+                    else:
+                        direction = "right" if dx > 0 else "left"
+                elif current_direction in ["up", "down"]:
+                    if abs(dx) > abs(dy) + threshold:
+                        direction = "right" if dx > 0 else "left"
+                    else:
+                        direction = "down" if dy > 0 else "up"
                 else:
-                    direction = "down" if dy > 0 else "up"
+                    if abs(dx) > abs(dy):
+                        direction = "right" if dx > 0 else "left"
+                    else:
+                        direction = "down" if dy > 0 else "up"
 
                 move_x = (dx / distance) * self.speed * dt
                 move_y = (dy / distance) * self.speed * dt
 
-                # Sistema de Separación (Flocking): calcular fuerza de repulsión entre entidades cercanas
-                separation_x = 0
-                separation_y = 0
-                separation_radius = 35.0
-                if self.battlefield and hasattr(self.battlefield, "entitys"):
-                    for other in self.battlefield.entitys:
-                        if other != self:
-                            ox = self.x - other.x
-                            oy = self.y - other.y
-                            dist_other = (ox ** 2 + oy ** 2) ** 0.5
-                            if 0 < dist_other < separation_radius:
-                                force = (separation_radius - dist_other) / separation_radius
-                                separation_x += (ox / dist_other) * force * 40.0 * dt
-                                separation_y += (oy / dist_other) * force * 40.0 * dt
-
-                # Movimiento en eje X con verificación de colisión y separación
-                self.x += move_x + separation_x
-                 # Movimiento en eje Y con verificación de colisión y separación
-                self.y += move_y + separation_y
+                # Movimiento en eje X e Y directo sin fuerzas de separación (fricción eliminada)
+                self.x += move_x
+                self.y += move_y
                 from src import states
                 current_state = self.state_machine.current
                 if self.waypoints and (not isinstance(current_state, states.entity_states.WalkState) or getattr(current_state, "direction", None) != direction):

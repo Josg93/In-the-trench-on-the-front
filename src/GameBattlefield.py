@@ -136,7 +136,7 @@ class GameBattlefield():
         definition = None
         if entity_type in Entitys.LABOURERS:
             definition = Entitys.LABOURERS[entity_type].copy()
-            target_y = random.randint(655,1171)
+            target_y = random.randint(700,900)
             birth_way = self.find_path((obj.x, obj.y), (417, target_y))
             self.entitys.append(
                 Labourer(
@@ -303,8 +303,7 @@ class GameBattlefield():
             
             elif input_id == "move_entity":
                 if self.selected_entity is not None:
-                    if hasattr(self.selected_entity, "stop_working"):
-                        self.selected_entity.stop_working()
+                    
                     
                     #seleccionar edificio si coincide el click en una bulding
                     clicked_building = None
@@ -321,24 +320,32 @@ class GameBattlefield():
                         if waypoints:
                             self.selected_entity.waypoints = waypoints
                             self.selected_entity.target_position = (world_x, world_y)
+                        if hasattr(self.selected_entity, "stop_working"):
+                            self.selected_entity.stop_working()    
                         #else:
                         #    self.selected_entity.waypoints = [(world_x, world_y)]
                         #    self.selected_entity.target_position = (world_x, world_y)
                         
                     # Moverse hacia building                                 
                     elif clicked_building is not None:
-                        self.selected_entity.assigned_building = clicked_building
-                        clicked_building.highlight()
-                        b_rect = clicked_building.get_collision_rect()
-                        target_x = b_rect.centerx
-                        target_y = b_rect.centery
-                        waypoints = self.find_path((self.selected_entity.x, self.selected_entity.y), (target_x, target_y))
-                        if waypoints:
-                            self.selected_entity.waypoints = waypoints
-                            self.selected_entity.target_position = (target_x, target_y)
-                        #else:
-                        #    self.selected_entity.waypoints = [(target_x, target_y)]
-                        #    self.selected_entity.target_position = (target_x, target_y)
+                        slot = None
+                        slot = clicked_building.get_available_slot(self.selected_entity)
+                        
+                        if slot is not None:
+                            
+                            self.selected_entity.assigned_building = clicked_building
+                            self.selected_entity.assigned_slot = slot
+                            clicked_building.highlight()
+                            
+                            target_x, target_y = slot["pos"]
+                            waypoints = self.find_path((self.selected_entity.x, self.selected_entity.y), (target_x + 32, target_y + 16))
+                            if waypoints:
+                                self.selected_entity.waypoints = waypoints
+                                self.selected_entity.target_position = (target_x, target_y)
+                            
+                        else:
+                            # Si no hay slots libres, caer en movimiento normal hacia el centro o ignorar
+                            pass
 
 
     def render(self, surface: pygame.Surface) -> None:

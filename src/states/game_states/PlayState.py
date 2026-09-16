@@ -7,13 +7,15 @@ from src.Soldier import Soldier
 from src.definitions import Entitys
 from src.mixins import DrawableMixin
 from gale.camera import Camera
-from gale.timer import Timer
+from gale.timer import Timer, Tween
 import random
 import pygame
 import settings
 
 class PlayState(BaseState , DrawableMixin):
     def enter(self, level: Any = 1) -> None:
+        self.fade_alpha = 255
+        Tween(3, [(self, {"fade_alpha": 0})])
         self.camera = Camera(
             settings.VIRTUAL_WIDTH,
             settings.VIRTUAL_HEIGHT,
@@ -22,12 +24,18 @@ class PlayState(BaseState , DrawableMixin):
             bounds=pygame.Rect(0, 0,16000 , 1280)
         )
         self.battlefield = GameBattlefield(level, self.camera)
-        # Temporizadores para las oleadas de enemigos tras 30 segundos
+       
         
-        
+         # ----------------- Temporizador y Oleadas de Enemigos (30 segundos) -----------------
         self.wave = 1
-        Timer.every(30 * self.wave, lambda : self.spawn_enemy_wave(self.wave))
+        Timer.every(30 * self.wave, lambda : self.spawn_enemy_wave(self.wave) )
         
+
+        self.transition_alpha = 255
+        self.transitioning = False
+        
+        #temporizador de fade in fade out
+        Timer.tween(4, [(self, {"transition_alpha": 0})])
 
         
         
@@ -65,9 +73,13 @@ class PlayState(BaseState , DrawableMixin):
         if self.battlefield.food >= 100 and type == "labourer":
             target_pos = (417, target_y)
             self.battlefield.food -= 100
-            definition = Entitys.LABOURERS["Man"].copy()
+            gender = random.randint(0,1)
+            if gender == 0:
+                definition = Entitys.LABOURERS["Man"].copy()
+            elif gender == 1:    
+                definition = Entitys.LABOURERS["Woman"].copy()
             
-            spawn_x = 200
+            spawn_x = 300
             spawn_y = 863
             birth_way = self.battlefield.find_path((spawn_x, spawn_y), target_pos)
             
@@ -111,6 +123,9 @@ class PlayState(BaseState , DrawableMixin):
             )
             self.battlefield.entitys.append(new_soldier)
 
+
+
+
     def spawn_enemy_wave(self , wave : int) -> None:
         """
         Genera una oleada de soldados enemigos desde el extremo derecho del mapa
@@ -119,11 +134,11 @@ class PlayState(BaseState , DrawableMixin):
         
         definition = Entitys.SOLDIERS["Soldier_enemy"].copy()
         
-        for i in range(40 * wave):  # Spawnea 3 enemigos por oleada
-            target_y = random.randint(655,1100)
-            spawn_x = 15500
-            spawn_y = target_y
-            left_edge = (0, spawn_y)
+        for i in range(10 * wave):  # Spawnea 10 enemigos por oleada
+            y = random.randint(655,1100)
+            spawn_x = 7750 # 15500
+            spawn_y = y
+            left_edge = (320, spawn_y)
 
             birth_way = self.battlefield.find_path((spawn_x, spawn_y), left_edge)
             enemy_soldier = Soldier(
@@ -139,6 +154,9 @@ class PlayState(BaseState , DrawableMixin):
             )
             self.battlefield.entitys.append(enemy_soldier)
         wave += 1
+        
+        
+        
     def update(self, dt: float) -> None:
         self.battlefield.update(dt)
         self.scroll(dt)
@@ -147,54 +165,14 @@ class PlayState(BaseState , DrawableMixin):
             self.state_machine.change("defeat")
         
 
-        # ----------------- Temporizador y Oleadas de Enemigos (30 segundos) -----------------
+       
        
         
-        
-        # ----------------- Gestión de objetivos de los enemigos ----------------------------
-        # Los enemigos priorizan atacar a entidades amigas en rango; si no hay, avanzan hacia el borde izquierdo.
-        for entity in self.battlefield.entitys:
-            if getattr(entity, "is_enemy", False):
-                attack_range = getattr(entity, "attack_range", 150.0)
-                target_found = False
-
-                for other in self.battlefield.entitys:
-                    if not getattr(other, "is_enemy", False):
-                        dist = ((other.x - entity.x) ** 2 + (other.y - entity.y) ** 2) ** 0.5
-                        if dist <= attack_range:
-                            target_found = True
-                            # Detenerse para combatir
-                            entity.waypoints = []
-                            break
-
-                # Si no hay amigos en rango y no tiene ruta activa, avanzar hacia la izquierda (x = 0)
-                if not target_found and not entity.waypoints:
-                    left_edge = (0, entity.y)
-                    waypoints = self.battlefield.find_path((entity.x, entity.y), left_edge)
-                    if waypoints:
-                        entity.waypoints = waypoints
-                        entity.target_position = left_edge
-
-        # ----------------- manejar actividades de las entidades --------------------------
-        for entity in self.battlefield.entitys:
-            # poner a hacer algo a las entidades
-            if entity.assigned_building is not None:
-                #poner a trabajar a los labourers    
-                if getattr(entity, "entity_type") in ["Man", "Woman"]:
-                    entity_rect =  entity.get_work_rect()
-                    if entity_rect.colliderect(entity.assigned_building.get_collision_rect()):
-                        entity.work()  
-                        
-                # poner a trabajar a los soldiers        
-                if getattr(entity, "entity_type", "") == "Soldier":
-                    entity_rect =  entity.get_work_rect()
-                    if entity_rect.colliderect(entity.assigned_building.get_collision_rect()):
-                        if hasattr(entity, "trench"):
-                            entity.trench() 
-    
     
     def on_input(self, input_id: str, input_data: Any) -> None:
-        if input_id == "select_entity" and hasattr(input_data, "pressed") and input_data.pressed:
+        if input_id == "enter" and input_data.pressed:
+            print("in the trench!")
+        elif input_id == "select_entity" and hasattr(input_data, "pressed") and input_data.pressed:
             mouse_x, mouse_y = input_data.position
             virtual_mouse_x, virtual_mouse_y = self.mouse_to_virtual(mouse_x, mouse_y)
             world_x, world_y = self.camera.screen_to_world((virtual_mouse_x, virtual_mouse_y))
@@ -272,3 +250,25 @@ class PlayState(BaseState , DrawableMixin):
         icon_sol.blit(texture, (0, 0), frame_sol)
         icon_sol_scaled = pygame.transform.scale(icon_sol, (64, 96))
         surface.blit(icon_sol_scaled, (applied_soldier_btn_rect.x , applied_soldier_btn_rect.y ))
+
+
+        # ----------------- muestra tiempo para la siguiente oleada y numero de oleada ---------
+
+        waves_rect = pygame.Rect(self.camera.x + 670, self.camera.y - 350, 220, 60)
+        applied_waves_rect = self.camera.apply(box_rect)
+        pygame.draw.rect(surface, (50, 50, 50), applied_waves_rect)
+        pygame.draw.rect(surface, (255, 255, 255), applied_waves_rect, 2)
+        
+        time_for_wave = settings.FONTS["medium"].render(f"time for next wave: {int(self.battlefield.food)}", True, (255, 255, 255))
+        wave_number = settings.FONTS["medium"].render(f"wave number: {len(self.battlefield.entitys)}", True, (255, 255, 255))
+        
+        surface.blit(food_text, (applied_rect.x + 10, applied_rect.y + 8))
+        surface.blit(entities_text, (applied_rect.x + 10, applied_rect.y + 32))
+        
+        
+
+        if self.transition_alpha > 0:
+            fade_surface = pygame.Surface((settings.VIRTUAL_WIDTH, settings.VIRTUAL_HEIGHT))
+            fade_surface.fill((0, 0, 0))
+            fade_surface.set_alpha(int(self.transition_alpha))
+            surface.blit(fade_surface, (0, 0))

@@ -23,6 +23,7 @@ input_handler
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
 
+
 # Size we are trying to emulate
 VIRTUAL_WIDTH = 1368
 VIRTUAL_HEIGHT = 768
@@ -40,15 +41,19 @@ TILEMAPS = {
 
 TEXTURES = {
     "background": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "background_menu.jpeg"),
+    "white1": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "white1.jpeg"),
+    
     "tiles": pygame.image.load(BASE_DIR / "assets" / "graphics" / "tileset.png"),
     
     "entitys": pygame.image.load(BASE_DIR / "assets" / "graphics" / "entitys.png"),
+    
     "shooting": pygame.image.load(BASE_DIR / "assets" / "graphics" / "shooting.png"),
     
     "buildings": pygame.image.load(BASE_DIR / "assets" / "graphics" / "buildings.png"),
     "barracks": pygame.image.load(BASE_DIR / "assets" / "graphics" / "barracks.png"),
     "trench": pygame.image.load(BASE_DIR / "assets" / "graphics" / "trench.png"),
     "town1": pygame.image.load(BASE_DIR / "assets" / "graphics" / "town1.png"), 
+    "house": pygame.image.load(BASE_DIR / "assets" / "graphics" / "house.png"), 
 }
 
 FRAMES = {
@@ -59,12 +64,14 @@ FRAMES = {
     "barracks": frames.generate_frames(TEXTURES["barracks"], 347, 321),
     "trench": frames.generate_frames(TEXTURES["trench"], 384, 672),
     "town1": frames.generate_frames(TEXTURES["town1"], 190, 596),
+    "house": frames.generate_frames(TEXTURES["house"], 307, 245),
 }
 
 FONTS = {
     "small": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "font.ttf", 8),
     "medium": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "font.ttf", 16),
-    "big": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "font.ttf", 64),
+    "big": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "font.ttf", 32),
+    "title": pygame.font.Font(BASE_DIR / "assets" / "fonts" / "font.ttf", 64),
 }
 
 SOUNDS ={
