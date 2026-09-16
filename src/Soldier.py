@@ -39,8 +39,47 @@ class Soldier(GameEntity):
         self.current_target = None
         self.previous_waypoints = []
         self.previous_target_position = None
+        self.trench_state = None
+        self.pending_slot = None
+        self.exit_destination = None
 
     def update(self, dt: float) -> None:
+        # Manejo de estados de trinchera (entrada, interior y salida)
+        if self.trench_state == "moving_to_door":
+            if not self.waypoints:
+                self.trench_state = "entering"
+                if self.pending_slot:
+                    slot_pos = self.pending_slot["pos"]
+                    from gale.timer import Tween
+                    Tween(0.6, [(self, {"x": slot_pos[0], "y": slot_pos[1]})], on_complete=self._finish_entering_trench)
+            else:
+                super().update(dt)
+            return
+        elif self.trench_state == "entering" or self.trench_state == "exiting":
+            return
+        elif self.trench_state == "in_trench":
+            if self.attack_timer > 0:
+                self.attack_timer -= dt
+            if self.battlefield and hasattr(self.battlefield, "entitys"):
+                if self.current_target is not None:
+                    if self._is_alive_and_in_range(self.current_target):
+                        self.shoot(self.current_target)
+                    else:
+                        self.current_target = None
+                else:
+                    closest_enemy = None
+                    min_dist = self.attack_range
+                    for entity in self.battlefield.entitys:
+                        if entity != self and getattr(entity, "is_enemy", False) != self.is_enemy:
+                            dist = ((entity.x - self.x) ** 2 + (entity.y - self.y) ** 2) ** 0.5
+                            if dist < min_dist:
+                                min_dist = dist
+                                closest_enemy = entity
+                    if closest_enemy is not None:
+                        self.current_target = closest_enemy
+                        self.shoot(closest_enemy)
+            super().update(dt)
+            return
         # Reducir el temporizador de ataque en cada frame
         if self.attack_timer > 0:
             self.attack_timer -= dt
@@ -119,6 +158,9 @@ class Soldier(GameEntity):
         self.target_position = self.previous_target_position
         self.previous_waypoints = []
         self.previous_target_position = None
+        self.trench_state = None
+        self.pending_slot = None
+        self.exit_destination = None
 
     def shoot(self, closest_enemy : GameEntity):
         """Detiene el movimiento y ejecuta el ataque/disparo contra el objetivo actual."""

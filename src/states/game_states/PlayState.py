@@ -28,7 +28,7 @@ class PlayState(BaseState , DrawableMixin):
         
          # ----------------- Temporizador y Oleadas de Enemigos (30 segundos) -----------------
         self.wave = 1
-        Timer.every(30 * self.wave, lambda : self.spawn_enemy_wave(self.wave) )
+        #Timer.every(30 * self.wave, lambda : self.spawn_enemy_wave(self.wave) )
         
 
         self.transition_alpha = 255
@@ -97,15 +97,25 @@ class PlayState(BaseState , DrawableMixin):
             self.battlefield.entitys.append(new_labourer)
             
         elif self.battlefield.food >= 200 and type == "soldier":
+            # Comprobar que exista al menos 1 barracks aliado
+            has_barracks = any(
+                building.type == "barracks" and not getattr(building, "is_enemy", False)
+                for building in self.battlefield.buildings
+            )
+            if not has_barracks:
+                return
+
             self.battlefield.food -= 200
             target_y = random.randint(655,1000)
             target_pos = (3532,target_y)
             definition = Entitys.SOLDIERS["Soldier"].copy()
             
+            spawn_x, spawn_y = 400, 863  # Valor por defecto si se encuentra un barracks se sobreescribe
             for building in self.battlefield.buildings:
-                if building.type == "barracks":
+                if building.type == "barracks" and not getattr(building, "is_enemy", False):
                     spawn_x, spawn_y = (building.x + building.get_collision_rect().width // 2 ,
-                                        (building.y + building.get_collision_rect().height) + 120) 
+                                        (building.y + building.get_collision_rect().height) + 120)
+                    break
            
             
             birth_way = self.battlefield.find_path((spawn_x, spawn_y), target_pos)

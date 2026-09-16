@@ -13,6 +13,7 @@ input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RETURN, "enter"
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_KP_ENTER, "enter")
 input_handler.InputHandler.set_mouse_click_action(input_handler.MOUSE_BUTTON_1, "select_entity")
 input_handler.InputHandler.set_mouse_click_action(input_handler.MOUSE_BUTTON_3, "move_entity")
+input_handler.InputHandler.set_mouse_motion_action(None, "mouse_motion")
 
 
 TITLE = "In the Trech on The Front"

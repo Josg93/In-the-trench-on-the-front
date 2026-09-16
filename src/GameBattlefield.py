@@ -1,3 +1,4 @@
+from src.trench import Trench
 from typing import Any, Dict
 
 import pygame
@@ -27,11 +28,15 @@ class GameBattlefield():
     def __init__(self, map : Any = 1, camera : Camera = None) -> None:
         self.tilemap = load_tiled_map(settings.TILEMAPS[map])
         self.buildings = []
+        
         self.entitys = []
         self.selected_entity = None
+        self.is_dragging = False
+        self.drag_start = (0, 0)
+        self.drag_end = (0, 0)
         
         # atributos de estadisticas de juego:
-        self.food = 300
+        self.food = 3000
         
         
         self.camera = camera
@@ -198,18 +203,17 @@ class GameBattlefield():
         width = definition.pop("width")
         height = definition.pop("height")
         
-        self.buildings.append(
-            GameBuilding(
-                obj.type,
-                obj.x,
-                obj.y,
-                width,
-                height,
-                **definition
+        if obj.type == "trench":
+            building_obj = Trench(
+                obj.type, obj.x, obj.y, width, height, **definition
             )
-        )
+        else:
+            building_obj = GameBuilding(
+                obj.type, obj.x, obj.y, width, height, **definition
+            )
+        self.buildings.append(building_obj)
         if obj.type == "town" :
-            self.capitol = self.buildings[-1]  
+            self.capitol = self.buildings[-1]
         
     def mouse_to_virtual(self, mouse_x : float , mouse_y : float ):
         virtual_mouse_x = mouse_x * (settings.VIRTUAL_WIDTH / settings.WINDOW_WIDTH)
@@ -226,6 +230,7 @@ class GameBattlefield():
        
         self.entitys = [e for e in self.entitys if getattr(e, "hp", 100) > 0]
         self.buildings = [e for e in self.buildings if getattr(e, "hp", 100) > 0]        
+
 
 
     def find_path(self, start_pos: tuple, goal_pos: tuple) -> list:
@@ -282,23 +287,59 @@ class GameBattlefield():
         return ((r1 - r2) ** 2 + (c1 - c2) ** 2) ** 0.5
 
     def on_input(self, input_id: str, input_data: Any) -> None:
-        if hasattr(input_data, "pressed") and input_data.pressed:
+        # Verificar que el evento contenga una posición de ratón antes de procesarlo
+        if not hasattr(input_data, "position"):
+            return
+
+        if input_id == "mouse_motion" and self.is_dragging:
+            mouse_x, mouse_y = input_data.position
+            virtual_mouse_x, virtual_mouse_y = self.mouse_to_virtual(mouse_x, mouse_y)
+            world_x, world_y = self.camera.screen_to_world((virtual_mouse_x, virtual_mouse_y))
+            self.drag_end = (world_x, world_y)
+
+        if hasattr(input_data, "pressed"):
             mouse_x, mouse_y = input_data.position
             virtual_mouse_x , virtual_mouse_y = self.mouse_to_virtual(mouse_x, mouse_y)
             world_x, world_y = self.camera.screen_to_world((virtual_mouse_x, virtual_mouse_y))
 
-            #seleccionar entidad
+            #seleccionar entidad con click o drag (box selection)
             if input_id == "select_entity":
-                clicked_entity = None
-                for entity in self.entitys:
-                    rect = entity.get_selection_rect() if hasattr(entity, "get_selection_rect") else entity.get_collision_rect()
-                    if rect.collidepoint(world_x, world_y) and entity.is_enemy is False :
-                        clicked_entity = entity
-                        break
+                if input_data.pressed:
+                    self.drag_start = (world_x, world_y)
+                    self.drag_end = (world_x, world_y)
+                    self.is_dragging = True
+                else:
+                    if self.is_dragging:
+                        self.drag_end = (world_x, world_y)
+                        dx = self.drag_end[0] - self.drag_start[0]
+                        dy = self.drag_end[1] - self.drag_start[1]
+                        dist = (dx**2 + dy**2)**0.5
 
-                for entity in self.entitys:
-                    entity.selected = (entity == clicked_entity)
-                self.selected_entity = clicked_entity
+                        if dist > 8:
+                            # Selección por rectángulo (Drag Box Select - añade a la selección)
+                            x1, y1 = self.drag_start
+                            x2, y2 = self.drag_end
+                            box_rect = pygame.Rect(min(x1, x2), min(y1, y2), abs(x2 - x1), abs(y2 - y1))
+
+                            for entity in self.entitys:
+                                if not entity.is_enemy:
+                                    rect = entity.get_selection_rect() if hasattr(entity, "get_selection_rect") else entity.get_collision_rect()
+                                    if box_rect.colliderect(rect):
+                                        entity.selected = True
+                        else:
+                            # Selección individual por clic simple
+                            clicked_entity = None
+                            for entity in self.entitys:
+                                rect = entity.get_selection_rect() if hasattr(entity, "get_selection_rect") else entity.get_collision_rect()
+                                if rect.collidepoint(world_x, world_y) and entity.is_enemy is False :
+                                    clicked_entity = entity
+                                    break
+
+                            for entity in self.entitys:
+                                entity.selected = (entity == clicked_entity)
+                            self.selected_entity = clicked_entity
+
+                        self.is_dragging = False
 
             
             elif input_id == "move_entity":
@@ -309,10 +350,16 @@ class GameBattlefield():
                     clicked_building = None
                     if getattr(self.selected_entity, "entity_type") in ["Man", "Woman"]:
                         for building in self.buildings:
-                            if building.get_collision_rect().collidepoint(world_x, world_y):
+                            if building.get_collision_rect().collidepoint(world_x, world_y) and building.type in ["mill"]:
                                 clicked_building = building
                                 break
-                    
+                    if getattr(self.selected_entity, "entity_type") in ["Soldier"]:
+                        for building in self.buildings:
+                            if building.get_collision_rect().collidepoint(world_x, world_y) and building.type in ["trench"]:
+                                clicked_building = building
+                                break
+                            
+                            
                     # Moverse normal
                     if clicked_building is None:             
                         entity_center = (self.selected_entity.x, self.selected_entity.y)
@@ -322,9 +369,6 @@ class GameBattlefield():
                             self.selected_entity.target_position = (world_x, world_y)
                         if hasattr(self.selected_entity, "stop_working"):
                             self.selected_entity.stop_working()    
-                        #else:
-                        #    self.selected_entity.waypoints = [(world_x, world_y)]
-                        #    self.selected_entity.target_position = (world_x, world_y)
                         
                     # Moverse hacia building                                 
                     elif clicked_building is not None:
@@ -354,3 +398,15 @@ class GameBattlefield():
             building.render(surface, self.camera)
         for entity in self.entitys:
             entity.render(surface, self.camera)
+
+        # Renderizar rectángulo de selección por arrastre (drag box select)
+        if self.is_dragging:
+            x1, y1 = self.drag_start
+            x2, y2 = self.drag_end
+            world_rect = pygame.Rect(min(x1, x2), min(y1, y2), abs(x2 - x1), abs(y2 - y1))
+            screen_rect = self.camera.apply(world_rect)
+
+            sel_surface = pygame.Surface((max(1, screen_rect.width), max(1, screen_rect.height)), pygame.SRCALPHA)
+            sel_surface.fill((0, 255, 0, 40))  # Verde translúcido
+            surface.blit(sel_surface, (screen_rect.x, screen_rect.y))
+            pygame.draw.rect(surface, (0, 255, 0), screen_rect, 2)

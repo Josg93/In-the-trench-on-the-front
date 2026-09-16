@@ -56,6 +56,12 @@ class GameBuilding(mixins.DrawableMixin, mixins.CollidableMixin):
                 {"pos": (self.x + 24, self.y + 96 + 40), "occupied": False, "assigned_entity": None},
                 {"pos": (self.x + 24, self.y + 128 + 40), "occupied": False, "assigned_entity": None},
                 {"pos": (self.x + 24, self.y + 160 + 40), "occupied": False, "assigned_entity": None},
+                
+                {"pos": (self.x + 290, self.y + 40), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 290, self.y + 64 + 40), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 290, self.y + 96 + 40), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 290, self.y + 128 + 40), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 290, self.y + 160 + 40), "occupied": False, "assigned_entity": None},
             ]
             
         if self.type == "trench":

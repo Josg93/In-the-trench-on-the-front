@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [0.6.0] - 2026-09-16
+### Added
+- **Trench Entry & Exit System:** Soldiers assigned to trenches now pathfind to the nearest entrance door (`get_left_door()` / `get_right_door()`), transition smoothly via `gale.timer.Tween` into trench slots, continue fighting/taking damage while inside, and smoothly tween back out to doors when commanded to move elsewhere.
+- **Drag-to-Select Box Selection:** Players can now click and drag on the screen to draw a selection box, selecting multiple allied units at once with a translucent selection rectangle rendered on screen.
+- **Barracks Requirement:** Implemented a validation check ensuring allied soldiers can only be generated when at least 1 allied `barracks` building exists.
+- **Centralized Combat AI & Target Persistence:** Refactored combat logic into `Soldier.py`, eliminating target oscillation when enemies are at equal distances by making soldiers persist on their chosen target until death.
+- **Post-Combat Re-tasking:** Enemy soldiers automatically resume marching toward the map objective (`x = 0`) after eliminating their opponents.
+
+### Fixed
+- Fixed `AttributeError` (`'KeyboardData' object has no attribute 'position'`) when pressing `ENTER` in `PlayState`.
+- Fixed `AttributeError` (`'Trench' object has no attribute 'x'`) by correcting initialization order in `Trench.__init__` (`super().__init__()` runs before defining `work_slots`).
+- Removed duplicate and conflicting enemy combat loop from `PlayState.update()`.
+
 ## [0.5.0] - 2026-09-15
 ### Added
 - Entity-Building interaction system: Labourers can now be assigned to buildings (specifically the Mill) via work slots surrounding the structure.
