@@ -63,24 +63,23 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
         return self.get_collision_rect()
         
     def movement(self, dt : float):
-        if getattr(self, "is_working", False) and self.waypoints:
-            if hasattr(self, "stop_working"):
+        if getattr(self, "is_working", False) and (self.waypoints or self.assigned_building):
+            valid_working_position = True
+            if self.waypoints:
+                valid_working_position = False
+            elif self.assigned_building:
+                if getattr(self, "assigned_slot", None):
+                    sx, sy = self.assigned_slot["pos"]
+                    if ((self.x - sx)**2 + (self.y - sy)**2)**0.5 >= 60.0:
+                        valid_working_position = False
+                elif not self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect()):
+                    valid_working_position = False
+
+            if not valid_working_position and hasattr(self, "stop_working"):
                 self.stop_working()
 
-        if getattr(self, "is_working", False) and self.assigned_building:
-            valid_working_position = False
-            if getattr(self, "assigned_slot", None):
-                sx, sy = self.assigned_slot["pos"]
-                if ((self.x - sx)**2 + (self.y - sy)**2)**0.5 < 60.0:
-                    valid_working_position = True
-            elif self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect()):
-                valid_working_position = True
-
-            if not valid_working_position:
-                if hasattr(self, "stop_working"):
-                    self.stop_working()
-
         if self.waypoints:
+            # MEDIR DISTANCIAS 
             target_x, target_y = self.waypoints[0]
             entity_center_x = self.x + self.width / 2
             entity_center_y = self.y + self.height / 2
@@ -88,29 +87,26 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
             dy = target_y - entity_center_y
             distance = (dx ** 2 + dy ** 2) ** 0.5
 
-            # si la distancia con el punto es menor a cinco, ha llegado eliminar waypoint
+            # LLEGADA A DESTINO si la distancia con el punto es menor a cinco, ha llegado eliminar waypoint
             if distance < 5.0:
                 self.waypoints.pop(0)
                 if not self.waypoints:
-                    
                     self.target_position = None
-                    if self.assigned_building and getattr(self, "assigned_slot", None):
+                    if self.assigned_building and (
+                        getattr(self, "assigned_slot", None) or 
+                        self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect())
+                    ):
                         if hasattr(self, "work"):
                             self.work()
-                        else:
-                            self.state_machine.change("work")
-                    elif self.assigned_building and self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect()):
-                        if hasattr(self, "work"):
-                            self.work()
-                        else:
-                            self.state_machine.change("work")
+                        
                     else:
                         if self.assigned_building and hasattr(self.assigned_building, "free_slot"):
                             self.assigned_building.free_slot(self)
                         self.assigned_building = None
                         self.assigned_slot = None
                         self.state_machine.change("idle")
-            # si no ha llegado caminar:            
+            
+            #CAMINATA A DESTINO si no ha llegado caminar:            
             else:
                 from src import states
                 current_state = self.state_machine.current
@@ -137,13 +133,15 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
                 move_x = (dx / distance) * self.speed * dt
                 move_y = (dy / distance) * self.speed * dt
 
-                # Movimiento en eje X e Y directo sin fuerzas de separación (fricción eliminada)
                 self.x += move_x
                 self.y += move_y
-                from src import states
+
                 current_state = self.state_machine.current
-                if self.waypoints and (not isinstance(current_state, states.entity_states.WalkState) or getattr(current_state, "direction", None) != direction):
+                if not isinstance(current_state, states.entity_states.WalkState) or getattr(current_state, "direction", None) != direction:
                     self.state_machine.change("walk", direction=direction)
+
+
+
 
     def update(self, dt: float) -> None:
         self.movement(dt)

@@ -27,16 +27,28 @@ class Labourer(GameEntity):
     def update(self, dt: float) -> None:
         return super().update(dt)
     
+    
+    
     def work(self):
+        self.harvesting()
+
+    def stop_working(self):
+        self.stop_harvesting()
+
+
+
+
+# -------------------- COSECHAR TRIGO ---------------------
+    def harvesting(self):
         if not self.is_working:
             self.is_working = True
             self.work_timer = Timer.every(1, lambda: setattr(self.battlefield, 'food', self.battlefield.food + 10))
             #self.harvesting_sound = Timer.every(10, lambda: settings.SOUNDS["harvesting"].play())
            
             self.state_machine.change("work")
-
-    def stop_working(self):
-        if self.is_working:
+    
+    def stop_harvesting(self):
+         if self.is_working:
             self.is_working = False
             if hasattr(self, "work_timer") and self.work_timer:
                 #self.harvesting_sound
@@ -47,6 +59,8 @@ class Labourer(GameEntity):
             self.assigned_building = None
             self.assigned_slot = None
             self.state_machine.change("idle")
+
+# -------------------------------------------------        
     
     def render(self, surface: Surface, camera: Any) -> None:
         return super().render(surface, camera)    

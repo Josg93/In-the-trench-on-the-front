@@ -1,3 +1,4 @@
+from typing import Any
 from src.GameBuilding import GameBuilding
 import pygame 
 
@@ -40,14 +41,29 @@ class Trench(GameBuilding):
                 {"pos": (self.x + 166, self.y + 288 + 107), "occupied": False, "assigned_entity": None},
             ]
         
-    def find_free_slot(self):
+    def get_available_slot(self, entity: Any) -> dict:
+        self.free_slot(entity)
         for slot in self.work_slots:
-            if getattr(slot, "occupied") == False and getattr(slot, "assigned_entity") == None:
+            if slot["occupied"] is False:
+                slot["occupied"] = True
+                slot["assigned_entity"] = entity
                 return slot
-        return None                
-        
+        return None
+
+    def free_slot(self, entity: Any):
+        """
+        Libera el slot que estaba ocupado por la entidad especificada.
+        """
+        for slot in self.work_slots:
+            if slot["assigned_entity"] == entity:
+                slot["occupied"] = False
+                slot["assigned_entity"] = None
+                
+                
     def get_left_door(self):
-        return pygame.Rect(round(self.x + 80) , round(self.y + 164),80,86) 
+        left_door = pygame.Rect(round(self.x + 80) , round(self.y + 164),80,86) 
+        return (left_door.x + 40 , left_door.y + 43)
         
     def get_right_door(self):
-        return pygame.Rect(round(self.x + 341) , round(self.y + 150),80,86) 
+        right_door = pygame.Rect(round(self.x + 341) , round(self.y + 150),80,86)
+        return (right_door.x + 40, right_door.y + 43) 

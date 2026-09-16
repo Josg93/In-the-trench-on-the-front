@@ -215,11 +215,22 @@ class GameBattlefield():
         if obj.type == "town" :
             self.capitol = self.buildings[-1]
         
+        
+    # ----------------- UTILITIES -----------------        
     def mouse_to_virtual(self, mouse_x : float , mouse_y : float ):
         virtual_mouse_x = mouse_x * (settings.VIRTUAL_WIDTH / settings.WINDOW_WIDTH)
         virtual_mouse_y = mouse_y * (settings.VIRTUAL_HEIGHT / settings.WINDOW_HEIGHT)
         return (virtual_mouse_x, virtual_mouse_y)
        
+    def get_distance(self, target_x, target_y):   
+        entity_center_x = self.selected_entity.x + self.selected_entity.width / 2
+        entity_center_y = self.selected_entity.y + self.selected_entity.height / 2
+        dx = target_x - entity_center_x
+        dy = target_y - entity_center_y
+        distance = (dx ** 2 + dy ** 2) ** 0.5
+        return distance
+     
+    # -----------------------------------------------   
     def update(self, dt: float) -> None:
         for building in self.buildings:
             building.update(dt)
@@ -285,6 +296,13 @@ class GameBattlefield():
         r1, c1 = n1
         r2, c2 = n2
         return ((r1 - r2) ** 2 + (c1 - c2) ** 2) ** 0.5
+
+
+
+
+
+
+
 
     def on_input(self, input_id: str, input_data: Any) -> None:
         # Verificar que el evento contenga una posición de ratón antes de procesarlo
@@ -376,17 +394,36 @@ class GameBattlefield():
                         slot = clicked_building.get_available_slot(self.selected_entity)
                         
                         if slot is not None:
-                            
                             self.selected_entity.assigned_building = clicked_building
                             self.selected_entity.assigned_slot = slot
                             clicked_building.highlight()
                             
-                            target_x, target_y = slot["pos"]
-                            waypoints = self.find_path((self.selected_entity.x, self.selected_entity.y), (target_x + 32, target_y + 16))
-                            if waypoints:
-                                self.selected_entity.waypoints = waypoints
-                                self.selected_entity.target_position = (target_x, target_y)
-                            
+                            #movimiento para labourers
+                            if getattr(self.selected_entity, "entity_type") in ["Man", "Woman"]: 
+                                target_x, target_y = slot["pos"]
+                                waypoints = self.find_path((self.selected_entity.x, self.selected_entity.y), (target_x + 32, target_y + 16))
+                                if waypoints:
+                                    self.selected_entity.waypoints = waypoints
+                                    self.selected_entity.target_position = (target_x, target_y)
+                                    
+                                    
+                            #movimiento para soldiers
+                            elif getattr(self.selected_entity, "entity_type") in ["Soldier", "Machine"]:
+                                door1_x, door1_y = clicked_building.get_left_door()
+                                door2_x, door2_y = clicked_building.get_right_door()
+                                
+                                d_to_left = self.get_distance(door1_x, door1_y)
+                                d_to_right = self.get_distance(door2_x, door2_y)
+                                
+                                if d_to_left <=  d_to_right:
+                                    target_x, target_y = door1_x, door1_y
+                                else:
+                                    target_x, target_y = door2_x, door2_y    
+                                
+                                waypoints = self.find_path((self.selected_entity.x, self.selected_entity.y), (target_x , target_y))
+                                if waypoints:
+                                    self.selected_entity.waypoints = waypoints
+                                    self.selected_entity.target_position = (target_x, target_y) 
                         else:
                             # Si no hay slots libres, caer en movimiento normal hacia el centro o ignorar
                             pass

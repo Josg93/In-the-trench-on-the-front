@@ -42,8 +42,11 @@ class Soldier(GameEntity):
         self.trench_state = None
         self.pending_slot = None
         self.exit_destination = None
+        self.is_working = False
+
 
     def update(self, dt: float) -> None:
+        
         # Manejo de estados de trinchera (entrada, interior y salida)
         if self.trench_state == "moving_to_door":
             if not self.waypoints:
@@ -80,6 +83,55 @@ class Soldier(GameEntity):
                         self.shoot(closest_enemy)
             super().update(dt)
             return
+        
+        self.looking_enemies(dt)
+        super().update(dt)
+        
+        
+
+    def _is_alive_and_in_range(self, entity: 'GameEntity') -> bool:
+        """Verifica si el objetivo sigue vivo y dentro del rango de ataque."""
+        if not hasattr(entity, "x") or not hasattr(entity, "y"):
+            return False
+        if entity.hp <= 0:
+            return False
+        dist = ((entity.x - self.x) ** 2 + (entity.y - self.y) ** 2) ** 0.5
+        return dist <= self.attack_range
+
+    def _save_previous_state(self) -> None:
+        """Guarda la ruta y posición objetivo actual antes de iniciar el combate."""
+        self.previous_waypoints = list(self.waypoints)
+        self.previous_target_position = self.target_position
+
+    def _restore_previous_state(self) -> None:
+        """Restaura la ruta y posición objetivo previa cuando el combate finaliza."""
+        self.waypoints = list(self.previous_waypoints)
+        self.target_position = self.previous_target_position
+        self.previous_waypoints = []
+        self.previous_target_position = None
+        self.trench_state = None
+        self.pending_slot = None
+        self.exit_destination = None
+
+    def shoot(self, closest_enemy : GameEntity):
+        """Detiene el movimiento y ejecuta el ataque/disparo contra el objetivo actual."""
+        self.waypoints = []
+        self.state_machine.change("shoot")
+                
+        if self.attack_timer <= 0:
+            # Infligir daño al enemigo y reiniciar el cooldown
+            canal = pygame.mixer.find_channel(True)
+            shoot = random.randint(0,1)
+            if shoot == 0:
+                canal.play(settings.SOUNDS["shoot1"])
+            else:
+                canal.play(settings.SOUNDS["shoot2"])
+                
+            error = random.randint(0,10)    
+            closest_enemy.hp -= self.attack_power + error
+            self.attack_timer = self.attack_cooldown
+    
+    def looking_enemies(self , dt :float):
         # Reducir el temporizador de ataque en cada frame
         if self.attack_timer > 0:
             self.attack_timer -= dt
@@ -135,54 +187,26 @@ class Soldier(GameEntity):
             else:
                 super().update(dt)
             return
-
-        super().update(dt)
-
-    def _is_alive_and_in_range(self, entity: 'GameEntity') -> bool:
-        """Verifica si el objetivo sigue vivo y dentro del rango de ataque."""
-        if not hasattr(entity, "x") or not hasattr(entity, "y"):
-            return False
-        if entity.hp <= 0:
-            return False
-        dist = ((entity.x - self.x) ** 2 + (entity.y - self.y) ** 2) ** 0.5
-        return dist <= self.attack_range
-
-    def _save_previous_state(self) -> None:
-        """Guarda la ruta y posición objetivo actual antes de iniciar el combate."""
-        self.previous_waypoints = list(self.waypoints)
-        self.previous_target_position = self.target_position
-
-    def _restore_previous_state(self) -> None:
-        """Restaura la ruta y posición objetivo previa cuando el combate finaliza."""
-        self.waypoints = list(self.previous_waypoints)
-        self.target_position = self.previous_target_position
-        self.previous_waypoints = []
-        self.previous_target_position = None
-        self.trench_state = None
-        self.pending_slot = None
-        self.exit_destination = None
-
-    def shoot(self, closest_enemy : GameEntity):
-        """Detiene el movimiento y ejecuta el ataque/disparo contra el objetivo actual."""
-        self.waypoints = []
-        self.state_machine.change("shoot")
-                
-        if self.attack_timer <= 0:
-            # Infligir daño al enemigo y reiniciar el cooldown
-            canal = pygame.mixer.find_channel(True)
-            shoot = random.randint(0,1)
-            if shoot == 0:
-                canal.play(settings.SOUNDS["shoot1"])
-            else:
-                canal.play(settings.SOUNDS["shoot2"])
-                
-            error = random.randint(0,10)    
-            closest_enemy.hp -= self.attack_power + error
-            self.attack_timer = self.attack_cooldown
     
+    def work(self):
+        self.trench()
+        
     def trench(self):
-        # Lógica para interactuar con trincheras
-        pass
+        if self.assigned_slot:
+            slot_pos = self.assigned_slot["pos"]
+            self.x = slot_pos[0]
+            self.y = slot_pos[1]
+            self.is_working = True
+            self.state_machine.change("idle")
+
+    def stop_working(self):
+        if self.is_working:
+            self.is_working = False
+            if self.assigned_building and hasattr(self.assigned_building, "free_slot"):
+                self.assigned_building.free_slot(self)
+            self.assigned_building = None
+            self.assigned_slot = None
+            self.state_machine.change("idle")
     
     def render(self, surface: Surface, camera: Any) -> None:
         super().render(surface, camera)
