@@ -396,10 +396,22 @@
                  "width":64,
                  "x":273.969696969697,
                  "y":950.87878787879
+                }, 
+                {
+                 "height":93.5,
+                 "id":70,
+                 "name":"",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"Soldier",
+                 "visible":true,
+                 "width":63.5,
+                 "x":5152.5,
+                 "y":673.5
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -506,7 +518,7 @@
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "x":0,
          "y":0
         }, 
@@ -558,7 +570,7 @@
          "y":0
         }],
  "nextlayerid":20,
- "nextobjectid":68,
+ "nextobjectid":71,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

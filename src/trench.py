@@ -39,6 +39,10 @@ class Trench(GameBuilding):
                 {"pos": (self.x + 166, self.y + 224 + 107), "occupied": False, "assigned_entity": None},
                 {"pos": (self.x + 166, self.y + 256 + 107), "occupied": False, "assigned_entity": None},
                 {"pos": (self.x + 166, self.y + 288 + 107), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 166, self.y + 320 + 107), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 166, self.y + 352 + 107), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 166, self.y + 384 + 107), "occupied": False, "assigned_entity": None},
+                {"pos": (self.x + 166, self.y + 416 + 107), "occupied": False, "assigned_entity": None},
             ]
         
     def get_available_slot(self, entity: Any) -> dict:

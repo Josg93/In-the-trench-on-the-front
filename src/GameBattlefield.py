@@ -371,7 +371,7 @@ class GameBattlefield():
                             if building.get_collision_rect().collidepoint(world_x, world_y) and building.type in ["mill"]:
                                 clicked_building = building
                                 break
-                    if getattr(self.selected_entity, "entity_type") in ["Soldier"]:
+                    if getattr(self.selected_entity, "entity_type") in ["Soldier", "Machine"]:
                         for building in self.buildings:
                             if building.get_collision_rect().collidepoint(world_x, world_y) and building.type in ["trench"]:
                                 clicked_building = building
@@ -380,13 +380,17 @@ class GameBattlefield():
                             
                     # Moverse normal
                     if clicked_building is None:             
-                        entity_center = (self.selected_entity.x, self.selected_entity.y)
-                        waypoints = self.find_path(entity_center, (world_x, world_y))
-                        if waypoints:
-                            self.selected_entity.waypoints = waypoints
-                            self.selected_entity.target_position = (world_x, world_y)
-                        if hasattr(self.selected_entity, "stop_working"):
-                            self.selected_entity.stop_working()    
+                        if getattr(self.selected_entity, "entity_type", None) in ["Soldier", "Machine"] and getattr(self.selected_entity, "assigned_building", None) is not None:
+                            if hasattr(self.selected_entity, "un_trench"):
+                                self.selected_entity.un_trench((world_x, world_y))
+                        else:
+                            entity_center = (self.selected_entity.x, self.selected_entity.y)
+                            waypoints = self.find_path(entity_center, (world_x, world_y))
+                            if waypoints:
+                                self.selected_entity.waypoints = waypoints
+                                self.selected_entity.target_position = (world_x, world_y)
+                            if hasattr(self.selected_entity, "stop_working"):
+                                self.selected_entity.stop_working()    
                         
                     # Moverse hacia building                                 
                     elif clicked_building is not None:

@@ -46,7 +46,7 @@ class StartState(BaseState):
         )
         
         render_text(
-            alpha_surface,
+            surface,
             "Press Enter",
             settings.FONTS["medium"],
             settings.VIRTUAL_WIDTH // 2,
