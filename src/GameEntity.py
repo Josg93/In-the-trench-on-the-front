@@ -1,5 +1,6 @@
 from typing import Any
 from src import mixins
+from src import states
 from gale.state import StateMachine
 import pygame
 
@@ -64,21 +65,6 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
         return self.get_collision_rect()
         
     def movement(self, dt : float):
-        if getattr(self, "is_working", False) and (self.waypoints or self.assigned_building):
-            valid_working_position = True
-            if self.waypoints:
-                valid_working_position = False
-            elif self.assigned_building:
-                if getattr(self, "assigned_slot", None):
-                    sx, sy = self.assigned_slot["pos"]
-                    if ((self.x - sx)**2 + (self.y - sy)**2)**0.5 >= 60.0:
-                        valid_working_position = False
-                elif not self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect()):
-                    valid_working_position = False
-
-            if not valid_working_position and hasattr(self, "stop_working"):
-                self.stop_working()
-
         if self.waypoints:
             # Medir distancias al waypoint actual
             target_x, target_y = self.waypoints[0]
@@ -95,9 +81,7 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
                 if not self.waypoints:
                     self.target_position = None
                     if self.assigned_building and (
-                        getattr(self, "assigned_slot", None) or 
-                        self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect())
-                    ):
+                        getattr(self, "assigned_slot", None) or self.get_collision_rect().colliderect(self.assigned_building.get_collision_rect())):
                         if hasattr(self, "work"):
                             self.work()
                         
@@ -110,7 +94,7 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
             
             # Caminata hacia el destino con control anti-convulsión y debouncing de dirección
             else:
-                from src import states
+                
                 current_state = self.state_machine.current
                 current_direction = getattr(current_state, "direction", None) if isinstance(current_state, states.entity_states.WalkState) else None
 
@@ -138,15 +122,21 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
                     else:
                         candidate_direction = "down" if dy > 0 else "up"
 
-                # Calcular y aplicar desplazamiento fluido
-                move_x = (dx / distance) * self.speed * dt
-                move_y = (dy / distance) * self.speed * dt
+                # Calcular velocidad de Seek hacia el waypoint
+                seek_vx = (dx / distance) * self.speed
+                seek_vy = (dy / distance) * self.speed
 
-                self.x += move_x
-                self.y += move_y
+                # Calcular fuerza de Separation por Steering
+                sep_x, sep_y = self._compute_separation_force()
 
-                # Resolver colisiones entre unidades para evitar solapamientos y amontonamientos
-                self._resolve_unit_collisions()
+                # Combinar fuerzas (Blended Steering: Seek + Separation con peso 0.6)
+                separation_weight = 0.6
+                final_vx = seek_vx + sep_x * separation_weight
+                final_vy = seek_vy + sep_y * separation_weight
+
+                # Aplicar movimiento fluido con dt
+                self.x += final_vx * dt
+                self.y += final_vy * dt
 
                 # Debouncing y control de frecuencia: solo actualiza la dirección de la máquina de estados 
                 # si la nueva dirección difiere tras un intervalo de tiempo (0.15s), eliminando parpadeos y tirones visuales.
@@ -157,45 +147,54 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
                 else:
                     self.direction_timer = 0.0
 
-    def _resolve_unit_collisions(self):
+    def _compute_separation_force(self) -> tuple[float, float]:
         """
-        Sistema de colisión física entre unidades circulares.
-        Evita que las unidades se solapen o amontonen, separándolas suavemente
-        en función de sus radios de colisión combinados.
+        Calcula una fuerza de separación basada en los rectángulos de colisión (collision_rect).
+        Permite que las unidades se organicen de forma ortogonal/cuadrada sin solaparse.
         """
         if not self.battlefield or not hasattr(self.battlefield, "entitys"):
-            return
+            return 0.0, 0.0
 
-        self_radius = getattr(self, "collision_radius", 24.0)
-        self_center_x = self.x + self.width / 2
-        self_center_y = self.y + self.height / 2
+        self_rect = self.get_collision_rect()
+        # Inflar el rectángulo de colisión para crear un margen de proximidad (padding)
+        padded_rect = self_rect.inflate(16, 16)
+
+        sep_x = 0.0
+        sep_y = 0.0
+        neighbor_count = 0
+
+        self_center_x = self_rect.centerx
+        self_center_y = self_rect.centery
 
         for other in self.battlefield.entitys:
             if other == self:
                 continue
-            if not hasattr(other, "collision_radius"):
+            if not hasattr(other, "get_collision_rect"):
                 continue
 
-            other_radius = getattr(other, "collision_radius", 24.0)
-            other_center_x = other.x + other.width / 2
-            other_center_y = other.y + other.height / 2
+            other_rect = other.get_collision_rect()
+            if padded_rect.colliderect(other_rect):
+                other_center_x = other_rect.centerx
+                other_center_y = other_rect.centery
 
-            dx = self_center_x - other_center_x
-            dy = self_center_y - other_center_y
-            distance = (dx ** 2 + dy ** 2) ** 0.5
+                dx = self_center_x - other_center_x
+                dy = self_center_y - other_center_y
+                distance = (dx ** 2 + dy ** 2) ** 0.5
 
-            combined_radius = self_radius + other_radius
+                if distance > 0:
+                    strength = self.speed * 1.2
+                    sep_x += (dx / distance) * strength
+                    sep_y += (dy / distance) * strength
+                    neighbor_count += 1
+                else:
+                    sep_x += self.speed
+                    neighbor_count += 1
 
-            # Si las unidades colisionan (se solapan), aplicar resolución de empuje
-            if distance < combined_radius and distance > 0:
-                overlap = combined_radius - distance
-                nx = dx / distance
-                ny = dy / distance
+        if neighbor_count > 0:
+            sep_x /= neighbor_count
+            sep_y /= neighbor_count
 
-                # Repartir el empuje equitativamente (50% cada una)
-                push_factor = 0.5
-                self.x += nx * overlap * push_factor
-                self.y += ny * overlap * push_factor
+        return sep_x, sep_y
 
     def update(self, dt: float) -> None:
         self.movement(dt)
@@ -205,8 +204,19 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
     def render(self, surface: pygame.Surface, camera: Any) -> None:
         super().render(surface, camera)
         if self.selected:
-            dest = camera.apply(pygame.Rect(self.x, self.y, self.width, self.height))
-            pygame.draw.rect(surface, (0, 255, 0), dest, 2)
+            bar_width = self.width
+            bar_height = 6
+            bar_x = self.x
+            bar_y = self.y - 10
+            dest = camera.apply(pygame.Rect(bar_x, bar_y, bar_width, bar_height))
+            pygame.draw.rect(surface, (200, 0, 0), dest)
+            current_width = max(0, int(bar_width * (self.hp / self.max_hp)))
+            current_rect = pygame.Rect(dest.x, dest.y, current_width, bar_height)
+            pygame.draw.rect(surface, (0, 200, 0), current_rect)
+            pygame.draw.rect(surface, (255, 255, 255), dest, 1)
+
+            #dest = camera.apply(pygame.Rect(self.x, self.y, self.width, self.height))
+            #pygame.draw.rect(surface, (0, 255, 0), dest, 2)
 
         # Renderizar barra de vida si la entidad ha perdido HP
         if hasattr(self, "hp") and hasattr(self, "max_hp") and self.hp < self.max_hp:

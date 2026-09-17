@@ -19,6 +19,10 @@ class MenuState(BaseState):
                                                  (settings.WINDOW_WIDTH // 2,
                                                   settings.WINDOW_HEIGHT ))
         surface.blit(imagen_escalada,(0 , 0) )
+        imagen_escalada2 = pygame.transform.scale(settings.TEXTURES["white3"] ,
+                                                 (settings.WINDOW_WIDTH // 2 + 300,
+                                                  settings.WINDOW_HEIGHT ))
+        surface.blit(imagen_escalada2,(settings.WINDOW_WIDTH //  2 , 0) )
         #self.title.render(surface)
         
         render_text(
@@ -34,12 +38,42 @@ class MenuState(BaseState):
         
         render_text(
             surface,
-            "Tu deber es evitar que los bolcheviques \n se hagan con el poder, deten sus ataques a toda costa! ",
+            "Tu deber es evitar que los bolcheviques", 
             settings.FONTS["medium"],
             settings.VIRTUAL_WIDTH - settings.VIRTUAL_WIDTH // 4,
-            settings.VIRTUAL_HEIGHT // 2 + 40,
+            190,
             (197, 195, 198),
             center=True,
+            shadowed=True,
+        )
+        render_text(
+            surface,
+            "se hagan con el poder", 
+            settings.FONTS["medium"],
+            settings.VIRTUAL_WIDTH - settings.VIRTUAL_WIDTH // 4,
+            200,
+            (197, 195, 198),
+            center=True,
+            shadowed=True,
+        )
+        render_text(
+            surface,
+            "Repele el ataque enemigo ",
+            settings.FONTS["big"],
+            settings.VIRTUAL_WIDTH - settings.VIRTUAL_WIDTH // 4,
+            settings.VIRTUAL_HEIGHT // 2 + 100,
+            (197, 195, 198),
+            center= True,
+            shadowed=True,
+        )
+        render_text(
+            surface,
+            "para lograr la victoria",
+            settings.FONTS["big"],
+            settings.VIRTUAL_WIDTH - settings.VIRTUAL_WIDTH // 4,
+            settings.VIRTUAL_HEIGHT // 2 + 130,
+            (197, 195, 198),
+            center= True,
             shadowed=True,
         )
         

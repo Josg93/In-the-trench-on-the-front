@@ -8,6 +8,7 @@ from gale.camera import Camera
 from gale.timer import Timer
 from gale.ai.graph import Graph
 from gale.ai.search import a_star
+from gale.ai.formation import LineFormation
 
 from src.definitions import Entitys, Buildings
 from src.GameEntity import GameEntity
@@ -36,7 +37,7 @@ class GameBattlefield():
         self.drag_end = (0, 0)
         
         # atributos de estadisticas de juego:
-        self.food = 30000
+        self.food = 1000
         
         
         self.camera = camera
@@ -50,8 +51,9 @@ class GameBattlefield():
             
 
         self.build_graph()
-
-
+        
+ 
+        
         for obj in self.tilemap.object_layers.get("entitys", []):
             self.add_entity(obj)
 
@@ -134,7 +136,63 @@ class GameBattlefield():
 
         # === Fin construcción grafo ===
         
+    def find_path(self, start_pos: tuple, goal_pos: tuple) -> list:
+        """
+        Busca el camino más corto entre start_pos y goal_pos usando A* sobre el grafo de navegación
+        preconstruido para la capa ground. Devuelve una lista de waypoints en coordenadas de píxel
+        (centros de los tiles) que la entidad debe seguir.
+        
+        El grafo está restringido a la capa ground (rows 19..36, cols 0..499) y los nodos bloqueados
+        por colisiones o edificios han sido eliminados previamente.
+        """
+        # Convertir posiciones de mundo a coordenadas de tile (fila, columna)
+        start_r, start_c = self.tilemap.tile_at(start_pos[0], start_pos[1])
+        goal_r, goal_c = self.tilemap.tile_at(goal_pos[0], goal_pos[1])
 
+        # 1. Verificar que tanto el inicio como el objetivo estén dentro de los límites
+        #    de la capa ground (usamos los atributos instalados en __init__)
+        if not (self.ground_start_row <= start_r < self.ground_end_row and self.ground_start_col <= start_c < self.ground_end_col):
+            return []
+        if not (self.ground_start_row <= goal_r < self.ground_end_row and self.ground_start_col <= goal_c < self.ground_end_col):
+            return []
+
+        # 2. Verificar que ambos nodos existan en el grafo (no estén bloqueados por obstáculos)
+        if (start_r, start_c) not in self.nav_graph._adjacency:
+            return []
+        if (goal_r, goal_c) not in self.nav_graph._adjacency:
+            return []
+
+        # 3. Ejecutar A* usando el grafo de Gale
+        #    a_star(start, goal, graph_or_fn, heuristic) acepta un objeto Graph y una función heurística
+        tile_path = a_star((start_r, start_c), (goal_r, goal_c), self.nav_graph, self._heuristic)
+        
+        if not tile_path:
+            return []
+
+        # 4. Convertir la ruta de nodos (fila, columna) a waypoints en píxeles
+        #    (centro de cada tile) para entregárselos a la entidad
+        waypoints = []
+        tw = self.tilemap.tile_width
+        th = self.tilemap.tile_height
+        for r, c in tile_path:
+            tx, ty = self.tilemap.position_of(r, c)
+            # Centro del tile: sumamos la mitad del ancho/alto
+            waypoints.append((tx + tw / 2, ty + th / 2))
+        return waypoints
+
+    def _heuristic(self, n1: tuple, n2: tuple) -> float:
+        """
+        Heurística euclidiana entre dos nodos (fila, columna).
+        Usa la fórmula sqrt((r1-r2)^2 + (c1-c2)^2).
+        """
+        r1, c1 = n1
+        r2, c2 = n2
+        return ((r1 - r2) ** 2 + (c1 - c2) ** 2) ** 0.5
+
+
+
+
+    
 
     def add_entity(self, obj: Any) -> None:
         entity_type = obj.type if obj.type else "Man"
@@ -222,13 +280,16 @@ class GameBattlefield():
         virtual_mouse_y = mouse_y * (settings.VIRTUAL_HEIGHT / settings.WINDOW_HEIGHT)
         return (virtual_mouse_x, virtual_mouse_y)
        
-    def get_distance(self, target_x, target_y):   
-        entity_center_x = self.selected_entity.x + self.selected_entity.width / 2
-        entity_center_y = self.selected_entity.y + self.selected_entity.height / 2
-        dx = target_x - entity_center_x
-        dy = target_y - entity_center_y
-        distance = (dx ** 2 + dy ** 2) ** 0.5
-        return distance
+    def get_distance(self, target_x, target_y, entity=None):   
+        target_entity = entity if entity is not None else self.selected_entity
+        if target_entity is not None and hasattr(target_entity, "x"):
+            entity_center_x = target_entity.x + target_entity.width / 2
+            entity_center_y = target_entity.y + target_entity.height / 2
+            dx = target_x - entity_center_x
+            dy = target_y - entity_center_y
+            distance = (dx ** 2 + dy ** 2) ** 0.5
+            return distance
+        return float('inf')
      
     # -----------------------------------------------   
     def update(self, dt: float) -> None:
@@ -239,67 +300,17 @@ class GameBattlefield():
         for entity in self.entitys:
             entity.update(dt)
        
+        # Liberar espacios en edificios/trincheras si la entidad muere
+        for entity in self.entitys:
+            if entity.hp <= 0:
+                if hasattr(entity, "stop_working"):
+                    entity.stop_working()
+
         self.entitys = [e for e in self.entitys if getattr(e, "hp", 100) > 0]
-        self.buildings = [e for e in self.buildings if getattr(e, "hp", 100) > 0]        
-
-
-
-    def find_path(self, start_pos: tuple, goal_pos: tuple) -> list:
-        """
-        Busca el camino más corto entre start_pos y goal_pos usando A* sobre el grafo de navegación
-        preconstruido para la capa ground. Devuelve una lista de waypoints en coordenadas de píxel
-        (centros de los tiles) que la entidad debe seguir.
-        
-        El grafo está restringido a la capa ground (rows 19..36, cols 0..499) y los nodos bloqueados
-        por colisiones o edificios han sido eliminados previamente.
-        """
-        # Convertir posiciones de mundo a coordenadas de tile (fila, columna)
-        start_r, start_c = self.tilemap.tile_at(start_pos[0], start_pos[1])
-        goal_r, goal_c = self.tilemap.tile_at(goal_pos[0], goal_pos[1])
-
-        # 1. Verificar que tanto el inicio como el objetivo estén dentro de los límites
-        #    de la capa ground (usamos los atributos instalados en __init__)
-        if not (self.ground_start_row <= start_r < self.ground_end_row and self.ground_start_col <= start_c < self.ground_end_col):
-            return []
-        if not (self.ground_start_row <= goal_r < self.ground_end_row and self.ground_start_col <= goal_c < self.ground_end_col):
-            return []
-
-        # 2. Verificar que ambos nodos existan en el grafo (no estén bloqueados por obstáculos)
-        if (start_r, start_c) not in self.nav_graph._adjacency:
-            return []
-        if (goal_r, goal_c) not in self.nav_graph._adjacency:
-            return []
-
-        # 3. Ejecutar A* usando el grafo de Gale
-        #    a_star(start, goal, graph_or_fn, heuristic) acepta un objeto Graph y una función heurística
-        tile_path = a_star((start_r, start_c), (goal_r, goal_c), self.nav_graph, self._heuristic)
-        
-        if not tile_path:
-            return []
-
-        # 4. Convertir la ruta de nodos (fila, columna) a waypoints en píxeles
-        #    (centro de cada tile) para entregárselos a la entidad
-        waypoints = []
-        tw = self.tilemap.tile_width
-        th = self.tilemap.tile_height
-        for r, c in tile_path:
-            tx, ty = self.tilemap.position_of(r, c)
-            # Centro del tile: sumamos la mitad del ancho/alto
-            waypoints.append((tx + tw / 2, ty + th / 2))
-        return waypoints
-
-    def _heuristic(self, n1: tuple, n2: tuple) -> float:
-        """
-        Heurística euclidiana entre dos nodos (fila, columna).
-        Usa la fórmula sqrt((r1-r2)^2 + (c1-c2)^2).
-        """
-        r1, c1 = n1
-        r2, c2 = n2
-        return ((r1 - r2) ** 2 + (c1 - c2) ** 2) ** 0.5
-
-
-
-
+        previous_building_count = len(self.buildings)
+        self.buildings = [e for e in self.buildings if getattr(e, "hp", 100) > 0]
+        if len(self.buildings) < previous_building_count:
+            self.build_graph()
 
 
 
@@ -361,76 +372,83 @@ class GameBattlefield():
 
             
             elif input_id == "move_entity":
-                if self.selected_entity is not None:
-                    
-                    
-                    #seleccionar edificio si coincide el click en una bulding
-                    clicked_building = None
-                    if getattr(self.selected_entity, "entity_type") in ["Man", "Woman"]:
-                        for building in self.buildings:
-                            if building.get_collision_rect().collidepoint(world_x, world_y) and building.type in ["mill"]:
-                                clicked_building = building
-                                break
-                    if getattr(self.selected_entity, "entity_type") in ["Soldier", "Machine"]:
-                        for building in self.buildings:
-                            if building.get_collision_rect().collidepoint(world_x, world_y) and building.type in ["trench"]:
-                                clicked_building = building
-                                break
-                            
-                            
-                    # Moverse normal
-                    if clicked_building is None:             
-                        if getattr(self.selected_entity, "entity_type", None) in ["Soldier", "Machine"] and getattr(self.selected_entity, "assigned_building", None) is not None:
-                            if hasattr(self.selected_entity, "un_trench"):
-                                self.selected_entity.un_trench((world_x, world_y))
-                        else:
-                            entity_center = (self.selected_entity.x, self.selected_entity.y)
-                            waypoints = self.find_path(entity_center, (world_x, world_y))
-                            if waypoints:
-                                self.selected_entity.waypoints = waypoints
-                                self.selected_entity.target_position = (world_x, world_y)
-                            if hasattr(self.selected_entity, "stop_working"):
-                                self.selected_entity.stop_working()    
-                        
-                    # Moverse hacia building                                 
-                    elif clicked_building is not None:
-                        slot = None
-                        slot = clicked_building.get_available_slot(self.selected_entity)
-                        
-                        if slot is not None:
-                            self.selected_entity.assigned_building = clicked_building
-                            self.selected_entity.assigned_slot = slot
-                            clicked_building.highlight()
-                            
-                            #movimiento para labourers
-                            if getattr(self.selected_entity, "entity_type") in ["Man", "Woman"]: 
-                                target_x, target_y = slot["pos"]
-                                waypoints = self.find_path((self.selected_entity.x, self.selected_entity.y), (target_x + 32, target_y + 16))
+                selected_units = [e for e in self.entitys if getattr(e, "selected", False) and not getattr(e, "is_enemy", False)]
+                if not selected_units and self.selected_entity is not None:
+                    selected_units = [self.selected_entity]
+
+                if selected_units:
+                    # Si hay un grupo seleccionado (> 1 unidad), usar formación LineFormation de Gale
+                    if len(selected_units) > 1:
+                        formation = LineFormation(spacing=48)
+                        for i, unit in enumerate(selected_units):
+                            offset = formation.slot_offset(i, len(selected_units))
+                            slot_x = world_x + offset.x
+                            slot_y = world_y + offset.y
+
+                            if getattr(unit, "entity_type", None) in ["Soldier", "Machine"] and getattr(unit, "assigned_building", None) is not None:
+                                if hasattr(unit, "un_trench"):
+                                    unit.un_trench((slot_x, slot_y))
+                            else:
+                                entity_center = (unit.x, unit.y)
+                                waypoints = self.find_path(entity_center, (slot_x, slot_y))
                                 if waypoints:
-                                    self.selected_entity.waypoints = waypoints
-                                    self.selected_entity.target_position = (target_x, target_y)
-                                    
-                                    
-                            #movimiento para soldiers
-                            elif getattr(self.selected_entity, "entity_type") in ["Soldier", "Machine"]:
-                                door1_x, door1_y = clicked_building.get_left_door()
-                                door2_x, door2_y = clicked_building.get_right_door()
-                                
-                                d_to_left = self.get_distance(door1_x, door1_y)
-                                d_to_right = self.get_distance(door2_x, door2_y)
-                                
-                                if d_to_left <=  d_to_right:
-                                    target_x, target_y = door1_x, door1_y
-                                else:
-                                    target_x, target_y = door2_x, door2_y    
-                                
-                                waypoints = self.find_path((self.selected_entity.x, self.selected_entity.y), (target_x , target_y))
+                                    unit.waypoints = waypoints
+                                    unit.target_position = (slot_x, slot_y)
+                                if hasattr(unit, "stop_working"):
+                                    unit.stop_working()
+                    else:
+                        # Comportamiento para 1 sola unidad seleccionada
+                        unit = selected_units[0]
+                        clicked_building = None
+                        if getattr(unit, "entity_type") in ["Man", "Woman"]:
+                            for building in self.buildings:
+                                if building.get_collision_rect().collidepoint(world_x, world_y) and building.type in ["mill"]:
+                                    clicked_building = building
+                                    break
+                        if getattr(unit, "entity_type") in ["Soldier", "Machine"]:
+                            for building in self.buildings:
+                                if building.get_collision_rect().collidepoint(world_x, world_y) and building.type in ["trench"]:
+                                    clicked_building = building
+                                    break
+
+                        if clicked_building is None:             
+                            if getattr(unit, "entity_type", None) in ["Soldier", "Machine"] and getattr(unit, "assigned_building", None) is not None:
+                                if hasattr(unit, "un_trench"):
+                                    unit.un_trench((world_x, world_y))
+                            else:
+                                entity_center = (unit.x, unit.y)
+                                waypoints = self.find_path(entity_center, (world_x, world_y))
                                 if waypoints:
-                                    self.selected_entity.waypoints = waypoints
-                                    self.selected_entity.target_position = (target_x, target_y) 
-                        else:
-                            # Si no hay slots libres, caer en movimiento normal hacia el centro o ignorar
-                            pass
+                                    unit.waypoints = waypoints
+                                    unit.target_position = (world_x, world_y)
+                                if hasattr(unit, "stop_working"):
+                                    unit.stop_working()    
+                        elif clicked_building is not None:
+                            slot = clicked_building.get_available_slot(unit)
+                            if slot is not None:
+                                unit.assigned_building = clicked_building
+                                unit.assigned_slot = slot
+                                clicked_building.highlight()
+                                
+                                if getattr(unit, "entity_type") in ["Man", "Woman"]: 
+                                    target_x, target_y = slot["pos"]
+                                    waypoints = self.find_path((unit.x, unit.y), (target_x + 32, target_y + 16))
+                                    if waypoints:
+                                        unit.waypoints = waypoints
+                                        unit.target_position = (target_x, target_y)
+                                elif getattr(unit, "entity_type") in ["Soldier", "Machine"]:
+                                    door1_x, door1_y = clicked_building.get_left_door()
+                                    door2_x, door2_y = clicked_building.get_right_door()
+                                    d_to_left = self.get_distance(door1_x, door1_y, unit)
+                                    d_to_right = self.get_distance(door2_x, door2_y, unit)
+                                    if d_to_left <= d_to_right:
+                                        target_x, target_y = door1_x, door1_y
+                                    else:
+                                        target_x, target_y = door2_x, door2_y    
+                                    waypoints = self.find_path((unit.x, unit.y), (target_x, target_y))
+                                    if waypoints:
+                                        unit.waypoints = waypoints
+                                        unit.target_position = (target_x, target_y)
 
 
     def render(self, surface: pygame.Surface) -> None:

@@ -7,6 +7,9 @@ import settings
 
 class VictoryState(BaseState):
     def enter(self):
+        pygame.mixer.music.load(settings.BASE_DIR / "assets" / "sounds" / "white_victory.mp3"),
+        pygame.mixer.music.play(loops=-1)
+        
         self.transition_alpha = 255
         self.transitioning = False
         

@@ -42,7 +42,7 @@ class Labourer(GameEntity):
     def harvesting(self):
         if not self.is_working:
             self.is_working = True
-            self.work_timer = Timer.every(1, lambda: setattr(self.battlefield, 'food', self.battlefield.food + 10))
+            self.work_timer = Timer.every(5, lambda: setattr(self.battlefield, 'food', self.battlefield.food + 30))
             #self.harvesting_sound = Timer.every(10, lambda: settings.SOUNDS["harvesting"].play())
            
             self.state_machine.change("work")

@@ -13,8 +13,7 @@ import settings
 
 class PlayState(BaseState , DrawableMixin):
     def enter(self, level: Any = 1) -> None:
-        self.fade_alpha = 255
-        Tween(3, [(self, {"fade_alpha": 0})])
+        
         self.camera = Camera(
             settings.VIRTUAL_WIDTH,
             settings.VIRTUAL_HEIGHT,
@@ -26,17 +25,18 @@ class PlayState(BaseState , DrawableMixin):
         
         # Wave system initialization
         self.wave = 1
-        self.enemies_remaining = 10  # 10 * 2^(wave-1) for wave 1
-        self.wave_intervals = [0, 30, 30, 30, 30]#[30, 60, 120, 240, 480]  # seconds, doubles each wave (index 0 = before wave 1)
-        self.time_until_next_wave = self.wave_intervals[0]  # 30 seconds for first wave
-       
+        self.max_waves =  1#5
+        self.time_until_next_wave =10 #3 * 60.0 # 30 seconds for first wave
+        self.wave_in_progress = False
         self.game_won = False
-        
+       
+       
+        #temporizador de fade in fade out
         self.transition_alpha = 255
         self.transitioning = False
-        
-        #temporizador de fade in fade out
         Timer.tween(4, [(self, {"transition_alpha": 0})])
+        pygame.mixer.music.fadeout(5000)
+    
     
     def mouse_to_virtual(self, mouse_x : float , mouse_y : float ):
         virtual_mouse_x = mouse_x * (settings.VIRTUAL_WIDTH / settings.WINDOW_WIDTH)
@@ -132,29 +132,22 @@ class PlayState(BaseState , DrawableMixin):
             )
             self.battlefield.entitys.append(new_soldier)
     
-    def spawn_enemy_wave(self , wave : int) -> None:
+    def spawn_enemy_wave(self) -> None:
         """
         Genera una oleada de soldados enemigos desde el extremo derecho del mapa
         con el objetivo de avanzar hacia el borde izquierdo (x = 0).
         """
-        if wave > 5:
-            # Wave 5 completed, player wins
-            self.state_machine.change("victory")
-            return
-            
+        
         definition = Entitys.SOLDIERS["Soldier_enemy"].copy()
         
         # Enemies per wave: 10, 20, 40, 80, 160 (doubling)
-        enemies_this_wave = 10 * (2 ** (wave - 1))
-        self.enemies_remaining = enemies_this_wave
+        enemies_this_wave = 1 * self.wave 
         
         for i in range(enemies_this_wave):
-            y = random.randint(655,1100)
-            spawn_x = 7750 # 15500
+            y = random.randint(800,1000)
+            spawn_x = 12000 #15500  # 15500
             spawn_y = y
-            left_edge = (320, spawn_y)
 
-            birth_way = self.battlefield.find_path((spawn_x, spawn_y), left_edge)
             enemy_soldier = Soldier(
                 x=spawn_x,
                 y=spawn_y,
@@ -162,46 +155,54 @@ class PlayState(BaseState , DrawableMixin):
                 height=96,
                 battlefield=self.battlefield,
                 entity_type="Soldier_enemy",
-                waypoints=birth_way,
-                target_position=left_edge,
+                waypoints=[],
+                target_position=None,
                 **definition
             )
+            target_pos = enemy_soldier._get_strategic_target_position()
+            birth_way = self.battlefield.find_path((spawn_x, spawn_y), target_pos)
+            if birth_way:
+                enemy_soldier.waypoints = birth_way
+                enemy_soldier.target_position = target_pos
+                enemy_soldier.state_machine.change("walk", direction="left")
+                
             self.battlefield.entitys.append(enemy_soldier)
+     
+            
+            
+    
     
     def update(self, dt: float) -> None:
         self.battlefield.update(dt)
         self.scroll(dt)
 
-        # Update wave timer
-        self.time_until_next_wave -= dt
-
-        if self.time_until_next_wave <= 0:
-            # Spawn current wave
-            self.spawn_enemy_wave(self.wave)
-            # Set next interval (doubles each wave)
-            if self.wave < 5:
-                self.time_until_next_wave = self.wave_intervals[self.wave]  # wave 1->index 1 (60s), etc.
+        # Wave progression logic
+        enemy_count = sum(1 for e in self.battlefield.entitys if getattr(e, "is_enemy", False))
         
+        if self.wave <= self.max_waves and not self.game_won:
+            if not self.wave_in_progress:
+                self.time_until_next_wave -= dt
+                if self.time_until_next_wave <= 0:
+                    self.spawn_enemy_wave()
+                    self.wave_in_progress = True
+            else:
+                if enemy_count == 0:
+                    self.wave_in_progress = False
+                    if self.wave < self.max_waves:
+                        self.wave += 1
+                        self.time_until_next_wave = 20.0 # 20 seconds rest between waves
+                    else:
+                        self.game_won = True
+
+        # Check defeat condition 
         if self.battlefield.capitol.hp <= 0:
             self.state_machine.change("defeat")
         
-        # Check if all enemies current wave are defeated
-        alive_enemies = [e for e in self.battlefield.entitys if getattr(e, "hp", 0) > 0 and getattr(e, "is_enemy", False)]
+        if self.game_won == True:
+            Timer.tween(5 ,[(self, {"transition_alpha": 255})], on_finish= (self.state_machine.change("victory")) )
+            
         
-        if not alive_enemies and self.enemies_remaining == 0 and not self.game_won:
-            # Current wave enemies all defeated
-            self.wave += 1
-            if self.wave > 5:
-                # All waves completed, player wins
-                self.game_won = True
-                self.state_machine.change("victory")
-            # else: next wave will spawn when timer triggers
-        
-        # Check win condition after wave 5 with no enemies
-        if self.wave > 5 and not self.game_won and len(alive_enemies) == 0:
-            self.game_won = True
-            self.state_machine.change("victory")
-    
+      
     def on_input(self, input_id: str, input_data: Any) -> None:
         if input_id == "enter" and input_data.pressed:
             print("in the trench!")
@@ -286,13 +287,20 @@ class PlayState(BaseState , DrawableMixin):
         pygame.draw.rect(surface, (50, 50, 50), applied_waves_rect)
         pygame.draw.rect(surface, (255, 255, 255), applied_waves_rect, 2)
         
-        # Time remaining for next wave
-        time_remaining = max(0, int(self.time_until_next_wave))
-        time_text = settings.FONTS["medium"].render(f"Time: {time_remaining}s", True, (255, 255, 255))
-        wave_text = settings.FONTS["medium"].render(f"Wave: {self.wave}", True, (255, 255, 255))
+        wave_str = f"Wave: {self.wave} / {self.max_waves}" if self.wave <= self.max_waves else f"Wave: Final ({self.max_waves})"
+        wave_text = settings.FONTS["medium"].render(wave_str, True, (255, 255, 255))
         
-        surface.blit(time_text, (applied_waves_rect.x + 10, applied_waves_rect.y + 8))
-        surface.blit(wave_text, (applied_waves_rect.x + 10, applied_waves_rect.y + 32))
+        enemy_count = sum(1 for e in self.battlefield.entitys if getattr(e, "is_enemy", False))
+        if self.game_won:
+            status_text = settings.FONTS["medium"].render("VICTORY!", True, (50, 250, 50))
+        elif not self.wave_in_progress:
+            time_remaining = max(0, int(self.time_until_next_wave))
+            status_text = settings.FONTS["medium"].render(f"Next in: {time_remaining}s", True, (200, 200, 50))
+        else:
+            status_text = settings.FONTS["medium"].render(f"Enemies: {enemy_count}", True, (250, 50, 50))
+        
+        surface.blit(wave_text, (applied_waves_rect.x + 10, applied_waves_rect.y + 8))
+        surface.blit(status_text, (applied_waves_rect.x + 10, applied_waves_rect.y + 32))
         
         if self.transition_alpha > 0:
             fade_surface = pygame.Surface((settings.VIRTUAL_WIDTH, settings.VIRTUAL_HEIGHT))

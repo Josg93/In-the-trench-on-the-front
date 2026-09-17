@@ -54,6 +54,8 @@ class Trench(GameBuilding):
                 return slot
         return None
 
+    
+
     def free_slot(self, entity: Any):
         """
         Libera el slot que estaba ocupado por la entidad especificada.

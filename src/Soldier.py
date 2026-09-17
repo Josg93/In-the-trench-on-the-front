@@ -1,6 +1,8 @@
 from typing import Any
 from pygame import Surface
+
 from src.GameEntity import GameEntity 
+from src import states
 
 from gale.timer import Tween
 
@@ -48,6 +50,9 @@ class Soldier(GameEntity):
         self.looking_enemies(dt)
         super().update(dt)
 
+
+
+
     def _is_alive_and_in_range(self, entity: 'GameEntity') -> bool:
         """Verifica si el objetivo sigue vivo y dentro del rango de ataque."""
         if not hasattr(entity, "x") or not hasattr(entity, "y"):
@@ -61,7 +66,7 @@ class Soldier(GameEntity):
         """Guarda la ruta, posición objetivo y el estado activo previo (idle/walk) antes de iniciar el combate."""
         self.previous_waypoints = list(self.waypoints)
         self.previous_target_position = self.target_position
-        from src import states
+        
         current_state = self.state_machine.current
         # Registrar si el soldado estaba caminando o en reposo antes de disparar
         if isinstance(current_state, states.entity_states.WalkState):
@@ -103,11 +108,41 @@ class Soldier(GameEntity):
             closest_enemy.hp -= self.attack_power + error
             self.attack_timer = self.attack_cooldown
     
+    
+
+    
+
+    def _get_strategic_target_position(self) -> tuple[float, float]:
+        if not self.battlefield:
+            return (300, self.y)
+
+        # Buscar trincheras aliadas con HP > 0
+        allied_trenches = [
+            b for b in self.battlefield.buildings if getattr(b, "type", None) == "trench" and not getattr(b, "is_enemy", False) and getattr(b, "hp", 0) > 0
+        ]
+
+        if allied_trenches:
+            closest_trench = min(
+                allied_trenches,
+                key=lambda t: ((t.x - self.x) ** 2 + (t.y - self.y) ** 2)
+            )
+            return (closest_trench.x + 300, self.y)
+
+        # Si no quedan trincheras vivas, apuntar al Capitolio
+        if hasattr(self.battlefield, "capitol") and self.battlefield.capitol and getattr(self.battlefield.capitol, "hp", 1) > 0:
+            capitol = self.battlefield.capitol
+            return (capitol.x + 300, self.y)
+
+        # Fallback predeterminado
+        return (300, self.y)
+
     def looking_enemies(self, dt: float):
         if self.attack_timer > 0:
             self.attack_timer -= dt
 
         if self.battlefield and hasattr(self.battlefield, "entitys"):
+            
+            # verificar hasta eliminar enemigos:
             if self.current_target is not None:
                 if self._is_alive_and_in_range(self.current_target):
                     self.shoot(self.current_target)
@@ -116,31 +151,49 @@ class Soldier(GameEntity):
                     self.current_target = None
                     self._restore_previous_state()
                     
-                    if self.is_enemy and not self.waypoints and self.battlefield and hasattr(self.battlefield, "find_path"):
-                        target_edge = (0, self.y)
-                        waypoints = self.battlefield.find_path((self.x, self.y), target_edge)
-                        if waypoints:
-                            self.waypoints = waypoints
-                            self.target_position = target_edge
-                            # Asegurar que el soldado enemigo reanude su marcha hacia la izquierda
-                            self.state_machine.change("walk", direction="left")
-
+                    if self.is_enemy and self.battlefield and hasattr(self.battlefield, "find_path"):
+                        # Una vez destruida la trinchera u objetivo actual, limpiar waypoints y buscar inmediatamente el siguiente objetivo estratégico (siguiente trinchera o capitolio)
+                        self.waypoints = []
+                        next_target = self._get_strategic_target_position()
+                        way_to = self.battlefield.find_path((self.x, self.y), next_target)
+                        if way_to:
+                            self.waypoints = way_to
+                            self.target_position = next_target
+                            direction = "left" if next_target[0] < self.x else "right"
+                            self.state_machine.change("walk", direction=direction)
+                        return
+                    
+    # Si el soldado no tiene objetivo actual y no tiene waypoints,
+            # buscar el próximo objetivo estratégico (siguiente trinchera o capitolio)
+            if self.current_target is None and not self.waypoints:
+                if self.is_enemy and self.battlefield and hasattr(self.battlefield, "find_path"):
+                    self.waypoints = []
+                    next_target = self._get_strategic_target_position()
+                    way_to = self.battlefield.find_path((self.x, self.y), next_target)
+                    if way_to:
+                        self.waypoints = way_to
+                        self.target_position = next_target
+                        direction = "left" if next_target[0] < self.x else "right"
+                        self.state_machine.change("walk", direction=direction)
+            
+            
             closest_enemy = None
             min_dist = self.attack_range
 
-            # Search for closest target (either enemy, building in path, or capital)
+            # Buscar al enemigo mas cercano Search for closest target (either enemy, building in path, or capital)
             for entity in self.battlefield.entitys:
                 if entity != self and getattr(entity, "is_enemy", False) != self.is_enemy:
                     dist = ((entity.x - self.x) ** 2 + (entity.y - self.y) ** 2) ** 0.5
                     if dist < min_dist:
                         min_dist = dist
                         closest_enemy = entity
+                        
             for building in self.battlefield.buildings:
                 if building != self and getattr(building, "is_enemy", False) != self.is_enemy:
-                    dist = ((building.x - self.x) ** 2 + (building.y - self.y) ** 2) ** 0.5
-                if dist < min_dist:
-                    min_dist = dist
-                    closest_enemy = building
+                    dist_to_building = ((building.x - self.x) ** 2 + (building.y - self.y) ** 2) ** 0.5
+                    if dist_to_building < min_dist:
+                        min_dist = dist_to_building
+                        closest_enemy = building
             
 
             if closest_enemy is not None:
@@ -164,7 +217,7 @@ class Soldier(GameEntity):
     
     
     
-    
+    # ------------------ ATRINCHERARSE -------------------------
         
     def trench(self):
         if self.assigned_slot:
@@ -174,6 +227,7 @@ class Soldier(GameEntity):
             self.x = slot_pos[0]
             self.y = slot_pos[1]
             self.state_machine.change("idle")
+            self.hp = 200
             
     def un_trench(self, target_pos: tuple):
         if self.assigned_building and getattr(self.assigned_building, "type", None) == "trench":
@@ -198,7 +252,7 @@ class Soldier(GameEntity):
                 if waypoints:
                     self.waypoints = waypoints
                     self.target_position = target_pos
-
+            self.hp = 100
     
     def render(self, surface: Surface, camera: Any) -> None:
         super().render(surface, camera)

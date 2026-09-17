@@ -43,6 +43,7 @@ TILEMAPS = {
 TEXTURES = {
     "background": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "background_menu.jpeg"),
     "white1": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "white1.jpeg"),
+    "white3": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "white3.jpeg"),
     "white_victory": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "white_victory.jpeg"),
     "red_victory": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "red_victory.jpeg"),
     
@@ -78,7 +79,7 @@ FONTS = {
 }
 
 SOUNDS ={
-	"menu_theme" : pygame.mixer.music.load(BASE_DIR / "assets" / "sounds" / "menu_theme.mp3"),
+	
     
     "shoot1": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "communist_shoot.mp3"),
     "shoot2": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "good_man_shoot.mp3"),
