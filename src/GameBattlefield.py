@@ -349,7 +349,7 @@ class GameBattlefield():
                         dist = (dx**2 + dy**2)**0.5
 
                         if dist > 8:
-                            # Selección por rectángulo (Drag Box Select - añade a la selección)
+                            # Selección por rectángulo (Drag Box Select - reemplaza selección anterior)
                             x1, y1 = self.drag_start
                             x2, y2 = self.drag_end
                             box_rect = pygame.Rect(min(x1, x2), min(y1, y2), abs(x2 - x1), abs(y2 - y1))
@@ -357,8 +357,10 @@ class GameBattlefield():
                             for entity in self.entitys:
                                 if not entity.is_enemy:
                                     rect = entity.get_selection_rect() if hasattr(entity, "get_selection_rect") else entity.get_collision_rect()
-                                    if box_rect.colliderect(rect):
-                                        entity.selected = True
+                                    entity.selected = box_rect.colliderect(rect)
+                                else:
+                                    entity.selected = False
+                            self.selected_entity = None
                         else:
                             # Selección individual por clic simple
                             clicked_entity = None

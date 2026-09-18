@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## [0.6.1] - 2026-09-18
+### Fixed
+- **Unit Selection Behavior (`GameBattlefield.py`):** Fixed selection logic in drag box selection and single-click selection to properly deselect previously selected units and clear `selected_entity`, ensuring that selecting a new group or unit replaces the previous selection instead of accumulating both groups (preventing labourers and other units from getting stuck or misdirected).
+
 ## [0.6.0] - 2026-09-16
 ### Added
 - **Dynamic Navigation Graph (`GameBattlefield.py`):** Automatic reconstruction of the A* navigation graph (`build_graph()`) when any building or trench is destroyed, allowing advancing enemy waves (e.g., wave 2) to pass smoothly through destroyed trench ruins without getting stuck.
