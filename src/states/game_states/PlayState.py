@@ -26,7 +26,7 @@ class PlayState(BaseState , DrawableMixin):
         # Wave system initialization
         self.wave = 1
         self.max_waves =  5
-        self.time_until_next_wave =3 * 60.0 # 30 seconds for first wave
+        self.time_until_next_wave = 3 * 60.0 # 30 seconds for first wave
         self.wave_in_progress = False
         self.game_won = False
         self.low_enemy_timer = 0.0
