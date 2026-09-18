@@ -36,14 +36,14 @@ class StartState(BaseState):
             pygame.draw.rect(alpha_surface, (255, 255, 255, 255), (0, 0, ancho_panel, alto_panel), 2)
 
             # 5. Pegar el panel en la pantalla en la posición real
-            pos_x = settings.WINDOW_WIDTH // 3 + 70
+            pos_x = settings.WINDOW_WIDTH // 3 + 60
             pos_y = 300
             
             surface.blit(alpha_surface, (pos_x, pos_y))
             
             render_text(
             surface,
-            "Press Enter",
+            "Press Enter to start Demo",
             settings.FONTS["medium"],
             settings.VIRTUAL_WIDTH // 2,
             settings.VIRTUAL_HEIGHT // 2 + 40,
@@ -63,7 +63,15 @@ class StartState(BaseState):
             shadowed=True,
         )
         
-        
+        render_text(
+            surface,
+            "Beta version 1.0.0",
+            settings.FONTS["medium"],
+            settings.VIRTUAL_WIDTH // 2,
+            settings.VIRTUAL_HEIGHT - 50,
+            (197, 195, 198),
+            center=True,
+            shadowed=True,) 
         
         if self.transition_alpha > 0:
             fade_surface = pygame.Surface((settings.VIRTUAL_WIDTH, settings.VIRTUAL_HEIGHT))
