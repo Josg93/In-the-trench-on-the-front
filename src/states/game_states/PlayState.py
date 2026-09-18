@@ -38,7 +38,7 @@ class PlayState(BaseState , DrawableMixin):
         self.transitioning = False
         Timer.tween(4, [(self, {"transition_alpha": 0})])
         pygame.mixer.music.fadeout(5000)
-        Timer.tween(3 , [], on_finish= lambda: (
+        Timer.tween(8 , [], on_finish= lambda: (
              pygame.mixer.music.load(settings.BASE_DIR / "assets" / "sounds" / "music1.mp3"),
              pygame.mixer.music.set_volume(0.5),
              pygame.mixer.music.play(),
