@@ -26,10 +26,11 @@ class PlayState(BaseState , DrawableMixin):
         # Wave system initialization
         self.wave = 1
         self.max_waves =  5
-        self.time_until_next_wave = 3 * 60.0 # 30 seconds for first wave
+        self.time_until_next_wave =3 * 60.0 # 30 seconds for first wave
         self.wave_in_progress = False
         self.game_won = False
         self.low_enemy_timer = 0.0
+        self.wave_announcement_alpha = 0
        
        
         #temporizador de fade in fade out
@@ -37,6 +38,12 @@ class PlayState(BaseState , DrawableMixin):
         self.transitioning = False
         Timer.tween(4, [(self, {"transition_alpha": 0})])
         pygame.mixer.music.fadeout(5000)
+        Timer.tween(8 , [], on_finish= lambda: (
+             pygame.mixer.music.load(settings.BASE_DIR / "assets" / "sounds" / "music1.mp3"),
+             pygame.mixer.music.set_volume(0.5),
+             pygame.mixer.music.play(),
+             pygame.mixer.music.queue(settings.BASE_DIR / "assets" / "sounds" / "music2.mp3"),
+        ))
     
     
     def mouse_to_virtual(self, mouse_x : float , mouse_y : float ):
@@ -139,6 +146,13 @@ class PlayState(BaseState , DrawableMixin):
         con el objetivo de avanzar hacia el borde izquierdo. 
         Distribuye la posición de spawn en X e Y para evitar acumulaciones masivas (clumping).
         """
+        self.wave_announcement_alpha = 255
+        Timer.tween(4, [(self, {"wave_announcement_alpha": 0})])
+
+        whistle = settings.SOUNDS["whistle"]
+        whistle.set_volume(0.10)   
+        whistle.play()
+        settings.SOUNDS["charge"].play()    
         
         definition = Entitys.SOLDIERS["Soldier_enemy"].copy()
         
@@ -321,6 +335,18 @@ class PlayState(BaseState , DrawableMixin):
         
         surface.blit(wave_text, (applied_waves_rect.x + 10, applied_waves_rect.y + 8))
         surface.blit(status_text, (applied_waves_rect.x + 10, applied_waves_rect.y + 32))
+        
+        if self.wave_announcement_alpha > 0:
+            text_surf = settings.FONTS["title"].render("Asalto bolchevique.", True, (250, 50, 50))
+            shadow_surf = settings.FONTS["title"].render("Asalto bolchevique.", True, (0, 0, 0))
+            
+            announcement_surf = pygame.Surface((text_surf.get_width() + 4, text_surf.get_height() + 4), pygame.SRCALPHA)
+            announcement_surf.blit(shadow_surf, (2, 2))
+            announcement_surf.blit(text_surf, (0, 0))
+            announcement_surf.set_alpha(int(self.wave_announcement_alpha))
+            
+            surface.blit(announcement_surf, (settings.VIRTUAL_WIDTH // 2 - announcement_surf.get_width() // 2, 170))
+
         
         if self.transition_alpha > 0:
             fade_surface = pygame.Surface((settings.VIRTUAL_WIDTH, settings.VIRTUAL_HEIGHT))
