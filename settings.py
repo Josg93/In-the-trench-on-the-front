@@ -85,7 +85,8 @@ FONTS = {
 }
 
 SOUNDS ={
-	
+	"whistle": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "trench_whistle.mp3"),
+    "charge": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "army_charge.mp3"),
     
     "shoot1": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "communist_shoot.mp3"),
     "shoot2": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "good_man_shoot.mp3"),

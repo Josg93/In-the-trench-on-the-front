@@ -27,7 +27,7 @@ class inTheTrenchOnTheFront(Game):
             }
         )
         
-        self.state_machine.change("start")
+        self.state_machine.change("play", 1)
                
     def update(self , dt :float)->None:
         self.state_machine.update(dt)
