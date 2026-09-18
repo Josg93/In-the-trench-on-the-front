@@ -12,12 +12,18 @@ import settings
 
 
 class inTheTrenchOnTheFront(Game):
+    
     def init(self)->None:
+        
         self.state_machine = StateMachine(
             {
                 "start" : game_states.StartState,
                 "menu" : game_states.MenuState,
-                "play" : game_states.PlayState
+                "play" : game_states.PlayState,
+                "defeat" : game_states.DefeatState,
+                "victory" : game_states.VictoryState,
+                "tutorial": game_states.TutorialState,
+                "mision1" : game_states.MisionState, 
             }
         )
         

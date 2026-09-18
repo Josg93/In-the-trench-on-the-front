@@ -1,15 +1,72 @@
-
-
-
-MILITATY = {
-    #ids de los tiles que usa
-        # Barracks (cuarteles) {}
-        # Trench (trinchera) {}  
+# Definición de edificios civiles y militares con parámetros de colisión personalizados (hitboxes parciales)
+CIVIL_BUILDINGS = {
+    "mill": {
+        "texture_id": "buildings",
+        "frame_index": 0,
+        "width": 416,
+        "height": 320,
+        "collidable": True,
+        "solid": True,
+        "collision_offset_x":130,
+        "collision_offset_y":150,
+        "collision_width":152,
+        "collision_height":72,
+        "hp": 5000,
+        "max_hp" : 5000,
+    },
+    "town": {
+        "texture_id": "town1",
+        "frame_index": 0,
+        "width": 200,
+        "height": 576,
+        "collidable": True,
+        "solid": True,
+        "hp": 10000,
+        "max_hp" : 10000,
+    },
+    "house": {
+        "texture_id": "house",
+        "frame_index": 0,
+        "width": 200,
+        "height": 576,
+        "collision_offset_x":38,
+        "collision_offset_y":55,
+        "collision_width":240,
+        "collision_height":152,
+        "collidable": True,
+        "solid": True,
+        "hp": 10000,
+        "max_hp" : 10000,
+    },
 }
 
-CIVIL = {
-    #ids de los tiles que usa
-        # Mill (Molino) {}
-        # Factory (Fabrica) {}
-  
-} 
+MILITARY_BUILDINGS = {
+    "barracks": {
+        "texture_id": "barracks",
+        "frame_index": 0,
+        "width": 100,
+        "height": 100,
+        "collision_offset_x": 48,
+        "collision_offset_y": 90,
+        "collision_width": 250,
+        "collision_height": 200,
+        "collidable": True,
+        "solid": True,
+        "hp": 4000,
+        "max_hp" : 4000,
+    },
+    "trench": {
+        "texture_id": "trench",
+        "frame_index": 0,
+        "width": 384,
+        "height": 672,
+        "collision_offset_x":166,
+        "collision_offset_y":50,
+        "collision_width":90,
+        "collision_height":672,
+        "collidable": True,
+        "solid": True,
+        "hp": 5000,
+        "max_hp" : 5000,
+    },
+}
