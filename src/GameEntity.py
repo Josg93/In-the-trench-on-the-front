@@ -129,14 +129,55 @@ class GameEntity(mixins.AnimatedMixin, mixins.DrawableMixin, mixins.CollidableMi
                 # Calcular fuerza de Separation por Steering
                 sep_x, sep_y = self._compute_separation_force()
 
-                # Combinar fuerzas (Blended Steering: Seek + Separation con peso 0.6)
-                separation_weight = 0.6
+                # Combinar fuerzas (Blended Steering: Seek + Separation con peso aumentado a 0.8 para mejor dispersión)
+                separation_weight = 0.8
                 final_vx = seek_vx + sep_x * separation_weight
                 final_vy = seek_vy + sep_y * separation_weight
 
-                # Aplicar movimiento fluido con dt
-                self.x += final_vx * dt
-                self.y += final_vy * dt
+                # Proponer nueva posición X e Y basada en la velocidad final
+                proposed_x = self.x + final_vx * dt
+                proposed_y = self.y + final_vy * dt
+
+                # Comprobación de colisión estática contra obstáculos del mapa y edificios sólidos
+                # Evita que las unidades atraviesen paredes, trincheras u otras zonas de colisión
+                if self.battlefield and hasattr(self.battlefield, "collision_rects"):
+                    # 1. Validar movimiento en el eje X
+                    test_rect_x = pygame.Rect(round(proposed_x), round(self.y + 64), self.width, 32)
+                    blocked_x = False
+                    for rect in self.battlefield.collision_rects:
+                        if test_rect_x.colliderect(rect):
+                            blocked_x = True
+                            break
+                    if not blocked_x:
+                        for b in getattr(self.battlefield, "buildings", []):
+                            if getattr(b, "collidable", False) or getattr(b, "solid", False):
+                                if test_rect_x.colliderect(b.get_collision_rect()):
+                                    blocked_x = True
+                                    break
+                    
+                    if not blocked_x:
+                        self.x = proposed_x
+
+                    # 2. Validar movimiento en el eje Y
+                    test_rect_y = pygame.Rect(round(self.x), round(proposed_y + 64), self.width, 32)
+                    blocked_y = False
+                    for rect in self.battlefield.collision_rects:
+                        if test_rect_y.colliderect(rect):
+                            blocked_y = True
+                            break
+                    if not blocked_y:
+                        for b in getattr(self.battlefield, "buildings", []):
+                            if getattr(b, "collidable", False) or getattr(b, "solid", False):
+                                if test_rect_y.colliderect(b.get_collision_rect()):
+                                    blocked_y = True
+                                    break
+
+                    if not blocked_y:
+                        self.y = proposed_y
+                else:
+                    # Fallback si no hay battlefield o rectángulos de colisión configurados
+                    self.x = proposed_x
+                    self.y = proposed_y
 
                 # Debouncing y control de frecuencia: solo actualiza la dirección de la máquina de estados 
                 # si la nueva dirección difiere tras un intervalo de tiempo (0.15s), eliminando parpadeos y tirones visuales.

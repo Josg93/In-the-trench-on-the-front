@@ -161,6 +161,14 @@ class Soldier(GameEntity):
                             self.target_position = next_target
                             direction = "left" if next_target[0] < self.x else "right"
                             self.state_machine.change("walk", direction=direction)
+                        else:
+                            # FALLBACK DE EMERGENCIA: Si A* (find_path) falla (por ejemplo, durante la reconstrucción
+                            # dinámica del grafo tras destruirse una trinchera), forzamos un waypoint directo hacia
+                            # la izquierda (hacia el borde/Capitolio) para evitar que el soldado se quede estático.
+                            fallback_target = (300, self.y)
+                            self.waypoints = [fallback_target]
+                            self.target_position = fallback_target
+                            self.state_machine.change("walk", direction="left")
                         return
                     
     # Si el soldado no tiene objetivo actual y no tiene waypoints,
@@ -175,6 +183,12 @@ class Soldier(GameEntity):
                         self.target_position = next_target
                         direction = "left" if next_target[0] < self.x else "right"
                         self.state_machine.change("walk", direction=direction)
+                    else:
+                        # FALLBACK DE EMERGENCIA: Si no hay waypoints y find_path falla, avanzar directamente a la izquierda
+                        fallback_target = (300, self.y)
+                        self.waypoints = [fallback_target]
+                        self.target_position = fallback_target
+                        self.state_machine.change("walk", direction="left")
             
             
             closest_enemy = None

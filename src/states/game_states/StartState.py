@@ -36,7 +36,7 @@ class StartState(BaseState):
             pygame.draw.rect(alpha_surface, (255, 255, 255, 255), (0, 0, ancho_panel, alto_panel), 2)
 
             # 5. Pegar el panel en la pantalla en la posición real
-            pos_x = settings.WINDOW_WIDTH // 3 + 90
+            pos_x = settings.WINDOW_WIDTH // 3 + 70
             pos_y = 300
             
             surface.blit(alpha_surface, (pos_x, pos_y))

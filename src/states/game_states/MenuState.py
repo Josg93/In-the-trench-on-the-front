@@ -15,67 +15,12 @@ class MenuState(BaseState):
         Timer.tween(1, [(self, {"transition_alpha": 0})])
         
     def render(self, surface : pygame.Surface):
-        imagen_escalada = pygame.transform.scale(settings.TEXTURES["white1"] ,
-                                                 (settings.WINDOW_WIDTH // 2,
+        imagen_escalada = pygame.transform.scale(settings.TEXTURES["menu"] ,
+                                                 (settings.WINDOW_WIDTH ,
                                                   settings.WINDOW_HEIGHT ))
-        surface.blit(imagen_escalada,(0 , 0) )
-        imagen_escalada2 = pygame.transform.scale(settings.TEXTURES["white3"] ,
-                                                 (settings.WINDOW_WIDTH // 2 + 300,
-                                                  settings.WINDOW_HEIGHT ))
-        surface.blit(imagen_escalada2,(settings.WINDOW_WIDTH //  2 , 0) )
-        #self.title.render(surface)
+        surface.blit(imagen_escalada,(0 , 10) )
         
-        render_text(
-            surface,
-            "Liderais al ejercito blanco",
-            settings.FONTS["big"],
-            settings.VIRTUAL_WIDTH - settings.VIRTUAL_WIDTH // 4,
-            170,
-            (197, 195, 198),
-            center= True,
-            shadowed=True,
-        )
         
-        render_text(
-            surface,
-            "Tu deber es evitar que los bolcheviques", 
-            settings.FONTS["medium"],
-            settings.VIRTUAL_WIDTH - settings.VIRTUAL_WIDTH // 4,
-            190,
-            (197, 195, 198),
-            center=True,
-            shadowed=True,
-        )
-        render_text(
-            surface,
-            "se hagan con el poder", 
-            settings.FONTS["medium"],
-            settings.VIRTUAL_WIDTH - settings.VIRTUAL_WIDTH // 4,
-            200,
-            (197, 195, 198),
-            center=True,
-            shadowed=True,
-        )
-        render_text(
-            surface,
-            "Repele el ataque enemigo ",
-            settings.FONTS["big"],
-            settings.VIRTUAL_WIDTH - settings.VIRTUAL_WIDTH // 4,
-            settings.VIRTUAL_HEIGHT // 2 + 100,
-            (197, 195, 198),
-            center= True,
-            shadowed=True,
-        )
-        render_text(
-            surface,
-            "para lograr la victoria",
-            settings.FONTS["big"],
-            settings.VIRTUAL_WIDTH - settings.VIRTUAL_WIDTH // 4,
-            settings.VIRTUAL_HEIGHT // 2 + 130,
-            (197, 195, 198),
-            center= True,
-            shadowed=True,
-        )
         
         
         
@@ -88,6 +33,6 @@ class MenuState(BaseState):
     def on_input(self, input_id: str, input_data: InputData) -> None:
         if self.transition_alpha <= 0: 
             if input_id == "enter" and input_data.pressed:
-                self.state_machine.change("play", 1)
+                self.state_machine.change("mision1")
 
         

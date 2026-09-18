@@ -7,6 +7,9 @@ from gale import frames
 
 import pygame
 
+_desktop = pygame.display.Info()
+
+
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_ESCAPE, "quit")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_p, "pause")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RETURN, "enter")
@@ -21,8 +24,8 @@ TITLE = "In the Trech on The Front"
 input_handler
 
 
-WINDOW_WIDTH = 1280
-WINDOW_HEIGHT = 720
+WINDOW_WIDTH = _desktop.current_w 
+WINDOW_HEIGHT = _desktop.current_h  - 50
 
 
 # Size we are trying to emulate
@@ -44,8 +47,11 @@ TEXTURES = {
     "background": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "background_menu.jpeg"),
     "white1": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "white1.jpeg"),
     "white3": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "white3.jpeg"),
-    "white_victory": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "white_victory.jpeg"),
-    "red_victory": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "red_victory.jpeg"),
+    "white_victory": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "white_victory.png"),
+    "red_victory": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "red_victory.png"),
+    "tutorial": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "tutorial.png"),
+    "menu": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "menu.png"),
+    "mision1": pygame.image.load(BASE_DIR / "assets" / "graphics" / "backgrounds" / "mision1.png"),
     
     "tiles": pygame.image.load(BASE_DIR / "assets" / "graphics" / "tileset.png"),
     

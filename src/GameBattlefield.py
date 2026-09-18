@@ -29,8 +29,8 @@ class GameBattlefield():
     def __init__(self, map : Any = 1, camera : Camera = None) -> None:
         self.tilemap = load_tiled_map(settings.TILEMAPS[map])
         self.buildings = []
-        
         self.entitys = []
+        
         self.selected_entity = None
         self.is_dragging = False
         self.drag_start = (0, 0)
@@ -41,6 +41,9 @@ class GameBattlefield():
         
         
         self.camera = camera
+        
+        
+        
         self.collision_rects = []
         for obj in self.tilemap.object_layers.get("collission", []):
             self.collision_rects.append(pygame.Rect(obj.x, obj.y, obj.width, obj.height))
@@ -333,6 +336,7 @@ class GameBattlefield():
 
             #seleccionar entidad con click o drag (box selection)
             if input_id == "select_entity":
+                selected_units = []
                 if input_data.pressed:
                     self.drag_start = (world_x, world_y)
                     self.drag_end = (world_x, world_y)
@@ -370,7 +374,7 @@ class GameBattlefield():
 
                         self.is_dragging = False
 
-            
+            #movimiento de unidades
             elif input_id == "move_entity":
                 selected_units = [e for e in self.entitys if getattr(e, "selected", False) and not getattr(e, "is_enemy", False)]
                 if not selected_units and self.selected_entity is not None:
@@ -396,6 +400,8 @@ class GameBattlefield():
                                     unit.target_position = (slot_x, slot_y)
                                 if hasattr(unit, "stop_working"):
                                     unit.stop_working()
+                                selected_units = []
+    
                     else:
                         # Comportamiento para 1 sola unidad seleccionada
                         unit = selected_units[0]
@@ -411,6 +417,8 @@ class GameBattlefield():
                                     clicked_building = building
                                     break
 
+
+                        # movimiento comun            
                         if clicked_building is None:             
                             if getattr(unit, "entity_type", None) in ["Soldier", "Machine"] and getattr(unit, "assigned_building", None) is not None:
                                 if hasattr(unit, "un_trench"):
@@ -423,6 +431,8 @@ class GameBattlefield():
                                     unit.target_position = (world_x, world_y)
                                 if hasattr(unit, "stop_working"):
                                     unit.stop_working()    
+                                    
+                        # movimiento hacia construcciones            
                         elif clicked_building is not None:
                             slot = clicked_building.get_available_slot(unit)
                             if slot is not None:
@@ -436,6 +446,8 @@ class GameBattlefield():
                                     if waypoints:
                                         unit.waypoints = waypoints
                                         unit.target_position = (target_x, target_y)
+                                        
+                                        
                                 elif getattr(unit, "entity_type") in ["Soldier", "Machine"]:
                                     door1_x, door1_y = clicked_building.get_left_door()
                                     door2_x, door2_y = clicked_building.get_right_door()

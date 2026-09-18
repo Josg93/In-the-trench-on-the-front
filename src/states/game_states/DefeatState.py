@@ -20,32 +20,13 @@ class DefeatState(BaseState):
         surface.blit(settings.TEXTURES["red_victory"],(0 , 0) )
         #self.title.render(surface)
         
-        render_text(
-            surface,
-            "In The trench on the front",
-            settings.FONTS["big"],
-            settings.VIRTUAL_WIDTH // 2,
-            170,
-            (197, 195, 198),
-            center= True,
-            shadowed=True,
-        )
-        render_text(
-            surface,
-            "You has been defeated",
-            settings.FONTS["big"],
-            settings.VIRTUAL_WIDTH // 2,
-            settings.VIRTUAL_HEIGHT // 2 ,
-            (197, 195, 198),
-            center=True,
-            shadowed=True,
-        )
+        
         render_text(
             surface,
             "Press Enter",
             settings.FONTS["medium"],
             settings.VIRTUAL_WIDTH // 2,
-            settings.VIRTUAL_HEIGHT // 2 + 40,
+            settings.VIRTUAL_HEIGHT - 40,
             (197, 195, 198),
             center=True,
             shadowed=True,

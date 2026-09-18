@@ -25,10 +25,11 @@ class PlayState(BaseState , DrawableMixin):
         
         # Wave system initialization
         self.wave = 1
-        self.max_waves =  1#5
-        self.time_until_next_wave =10 #3 * 60.0 # 30 seconds for first wave
+        self.max_waves =  5
+        self.time_until_next_wave =3 * 60.0 # 30 seconds for first wave
         self.wave_in_progress = False
         self.game_won = False
+        self.low_enemy_timer = 0.0
        
        
         #temporizador de fade in fade out
@@ -135,17 +136,20 @@ class PlayState(BaseState , DrawableMixin):
     def spawn_enemy_wave(self) -> None:
         """
         Genera una oleada de soldados enemigos desde el extremo derecho del mapa
-        con el objetivo de avanzar hacia el borde izquierdo (x = 0).
+        con el objetivo de avanzar hacia el borde izquierdo. 
+        Distribuye la posición de spawn en X e Y para evitar acumulaciones masivas (clumping).
         """
         
         definition = Entitys.SOLDIERS["Soldier_enemy"].copy()
         
-        # Enemies per wave: 10, 20, 40, 80, 160 (doubling)
-        enemies_this_wave = 1 * self.wave 
+        # Cantidad de enemigos escalada por número de oleada
+        enemies_this_wave = 20 * self.wave 
         
         for i in range(enemies_this_wave):
-            y = random.randint(800,1000)
-            spawn_x = 12000 #15500  # 15500
+            # Posición Y aleatoria dentro del carril de combate válido
+            y = random.randint(800, 1000)
+            # Distribuir el spawn en el eje X (entre 12000 y 12800) para crear una formación escalonada
+            spawn_x = random.randint(12000, 12800)
             spawn_y = y
 
             enemy_soldier = Soldier(
@@ -159,6 +163,8 @@ class PlayState(BaseState , DrawableMixin):
                 target_position=None,
                 **definition
             )
+            
+            # Calcular objetivo estratégico y ruta inicial
             target_pos = enemy_soldier._get_strategic_target_position()
             birth_way = self.battlefield.find_path((spawn_x, spawn_y), target_pos)
             if birth_way:
@@ -185,9 +191,22 @@ class PlayState(BaseState , DrawableMixin):
                 if self.time_until_next_wave <= 0:
                     self.spawn_enemy_wave()
                     self.wave_in_progress = True
+                    self.low_enemy_timer = 0.0
             else:
+                # Salvavidas: si quedan menos de 3 enemigos durante más de  (30s), eliminarlos automáticamente
+                if 0 < enemy_count < 3:
+                    self.low_enemy_timer += dt
+                    if self.low_enemy_timer >= 30.0:
+                        for e in self.battlefield.entitys:
+                            if getattr(e, "is_enemy", False):
+                                e.hp = 0
+                        self.low_enemy_timer = 0.0
+                else:
+                    self.low_enemy_timer = 0.0
+
                 if enemy_count == 0:
                     self.wave_in_progress = False
+                    self.low_enemy_timer = 0.0
                     if self.wave < self.max_waves:
                         self.wave += 1
                         self.time_until_next_wave = 20.0 # 20 seconds rest between waves
@@ -196,10 +215,10 @@ class PlayState(BaseState , DrawableMixin):
 
         # Check defeat condition 
         if self.battlefield.capitol.hp <= 0:
-            self.state_machine.change("defeat")
+           Timer.tween(4 ,[(self, {"transition_alpha": 255})], on_finish= lambda : self.state_machine.change("defeat") )
         
         if self.game_won == True:
-            Timer.tween(5 ,[(self, {"transition_alpha": 255})], on_finish= (self.state_machine.change("victory")) )
+            Timer.tween(4 ,[(self, {"transition_alpha": 255})], on_finish= lambda : self.state_machine.change("victory") )
             
         
       
@@ -235,7 +254,8 @@ class PlayState(BaseState , DrawableMixin):
         pygame.draw.rect(surface, (255, 255, 255), applied_rect, 2)
         
         food_text = settings.FONTS["medium"].render(f"Food: {int(self.battlefield.food)}", True, (255, 255, 255))
-        entities_text = settings.FONTS["medium"].render(f"Population: {len(self.battlefield.entitys)}", True, (255, 255, 255))
+        filtrados = [e for e in self.battlefield.entitys if e.is_enemy == False]
+        entities_text = settings.FONTS["medium"].render(f"Population: {len(filtrados)}", True, (255, 255, 255))
         
         surface.blit(food_text, (applied_rect.x + 10, applied_rect.y + 8))
         surface.blit(entities_text, (applied_rect.x + 10, applied_rect.y + 32))

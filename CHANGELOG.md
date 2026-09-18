@@ -2,6 +2,10 @@
 
 ## [0.6.0] - 2026-09-16
 ### Added
+- **Dynamic Navigation Graph (`GameBattlefield.py`):** Automatic reconstruction of the A* navigation graph (`build_graph()`) when any building or trench is destroyed, allowing advancing enemy waves (e.g., wave 2) to pass smoothly through destroyed trench ruins without getting stuck.
+- **Fair 5-Wave System (`PlayState.py`):** Implemented a complete wave progression system with a 30s initial preparation countdown, up to 5 progressive enemy waves, and automatic wave clearance tracking (next wave only starts when all current wave enemies are defeated, leading to a victory screen on wave 5 completion).
+- **Enhanced Wave & Combat HUD Panel:** Updated the UI panel in `PlayState` to display current wave progress (`Wave X / 5`), countdown timers, remaining enemy counts, and victory status.
+- **Precise Trench Slot Navigation:** Soldiers now pathfind and walk all the way directly to their exact assigned interior work slot (`slot["pos"]`) inside trenches rather than prematurely triggering via outer collision rect bounds.
 - **Trench Entry & Exit System:** Soldiers assigned to trenches now pathfind to the nearest entrance door (`get_left_door()` / `get_right_door()`), transition smoothly via `gale.timer.Tween` into trench slots, continue fighting/taking damage while inside, and smoothly tween back out to doors when commanded to move elsewhere.
 - **Drag-to-Select Box Selection:** Players can now click and drag on the screen to draw a selection box, selecting multiple allied units at once with a translucent selection rectangle rendered on screen.
 - **Barracks Requirement:** Implemented a validation check ensuring allied soldiers can only be generated when at least 1 allied `barracks` building exists.
@@ -13,6 +17,9 @@
 - **Optimized Waypoint Arrival Threshold:** Increased arrival threshold to 10.0px to prevent floating-point oscillation near target destinations.
 
 ### Fixed
+- Fixed issue where subsequent enemy waves (wave 2+) got stuck at destroyed trench ruins due to static, un-updated A* navigation graphs.
+- Fixed `AttributeError` / `TypeError` (`NoneType`) when clicking or issuing movement commands with no units selected or interacting with trenches without an active unit reference (`get_distance` and `move_entity` safeguards).
+- Fixed premature trench entry teleportation where soldiers snapped to slots before reaching the end of their waypoints.
 - Fixed `AttributeError` (`'KeyboardData' object has no attribute 'position'`) when pressing `ENTER` in `PlayState`.
 - Fixed `AttributeError` (`'Trench' object has no attribute 'x'`) by correcting initialization order in `Trench.__init__` (`super().__init__()` runs before defining `work_slots`).
 - Removed duplicate and conflicting enemy combat loop from `PlayState.update()`.
