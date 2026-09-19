@@ -9,7 +9,7 @@ import pygame
 
 _desktop = pygame.display.Info()
 
-
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_F11, "toggle_fullscreen")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_ESCAPE, "quit")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_p, "pause")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RETURN, "enter")

@@ -14,7 +14,8 @@ import settings
 class inTheTrenchOnTheFront(Game):
     
     def init(self)->None:
-        
+  
+        self.is_fullscreen: bool = False
         self.state_machine = StateMachine(
             {
                 "start" : game_states.StartState,
@@ -37,7 +38,11 @@ class inTheTrenchOnTheFront(Game):
         self.state_machine.render(surface)
             
     def on_input(self, input_id: str, input_data: InputData)->None:
-        if input_id == "quit" and input_data == "Pressed":
+        if input_id == "toggle_fullscreen" and input_data.pressed:
+            pygame.display.toggle_fullscreen()
+            self.is_fullscreen = not self.is_fullscreen
+            return
+        if input_id == "quit" and input_data.pressed:
             self.quit()
         else:
             self.state_machine.on_input(input_id, input_data)
